@@ -81,24 +81,18 @@
         
         <!-- Main Content -->
         <Grid Grid.Row="2" Margin="4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" MinWidth="250"/>
-                <ColumnDefinition Width="6"/>
-                <ColumnDefinition Width="3*" MinWidth="350"/>
-            </Grid.ColumnDefinitions>
-            
             <!-- Scene Tree View -->
-            <Border Grid.Column="0" Background="White" BorderBrush="#ddd" BorderThickness="1" CornerRadius="4">
+            <Border Background="White" BorderBrush="#ddd" BorderThickness="1" CornerRadius="4">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    
+
                     <Border Grid.Row="0" Background="#f8f9fa" BorderBrush="#ddd" BorderThickness="0,0,0,1">
                         <TextBlock Text="Scene Tree" FontWeight="Bold" Margin="8,6" Foreground="#495057"/>
                     </Border>
-                    
+
                     <Grid Grid.Row="1">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -106,7 +100,7 @@
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0" Text="No data" Foreground="#999" Margin="8,4"
                                    Visibility="{Binding SceneTreeItems.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
-                        <TreeView Grid.Row="1" 
+                        <TreeView Grid.Row="1"
                                   Name="SceneTreeView"
                                   ItemsSource="{Binding SceneTreeItems}"
                                   Margin="4"
@@ -125,10 +119,10 @@
                             <TreeView.ItemTemplate>
                                 <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                                     <StackPanel Orientation="Horizontal" Margin="2">
-                                        <Image Source="{Binding ItemType, Converter={StaticResource TreeItemIconConverter}}" 
+                                        <Image Source="{Binding ItemType, Converter={StaticResource TreeItemIconConverter}}"
                                                Width="16" Height="16" Margin="0,0,4,0"
-                                               VerticalAlignment="Center" 
-                                               Stretch="Uniform" 
+                                               VerticalAlignment="Center"
+                                               Stretch="Uniform"
                                                RenderOptions.BitmapScalingMode="HighQuality"/>
                                         <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" FontSize="11"/>
                                     </StackPanel>
@@ -138,11 +132,6 @@
                     </Grid>
                 </Grid>
             </Border>
-            
-            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="#ddd" Width="1"/>
-            
-            <!-- Properties Editor View -->
-            <ContentPresenter Grid.Column="2" Content="{Binding PropertiesEditor}"/>
         </Grid>
         
         <!-- Bottom Status -->

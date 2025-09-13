@@ -13,38 +13,88 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Toolbar for SubTool switching -->
-        <ToolBarTray Grid.Row="0" Background="LightGray">
-            <ToolBar>
-                <Button Content="Scene Explorer"
-                        Command="{Binding SwitchToSceneExplorerCommand}"
-                        ToolTip="Switch to Scene Explorer"/>
-                <Separator/>
-                <Button Content="Properties Editor"
-                        Command="{Binding SwitchToPropertiesEditorCommand}"
-                        ToolTip="Switch to Properties Editor"/>
-                <Separator/>
-                <!-- Status info -->
-                <TextBlock Text="Active SubTool:" Margin="10,0,5,0" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding CurrentSubToolName}" FontWeight="Bold" VerticalAlignment="Center"/>
-            </ToolBar>
-        </ToolBarTray>
+        <!-- Header/Title Bar -->
+        <Border Grid.Row="0" Background="#2D2D30" Padding="10,5">
+            <TextBlock Text="Game Editor"
+                       Foreground="White"
+                       FontSize="14"
+                       FontWeight="Bold"
+                       VerticalAlignment="Center"/>
+        </Border>
 
-        <!-- Current SubTool Content Area -->
-        <ContentControl Grid.Row="1"
-                        Content="{Binding CurrentSubToolViewModel}"
-                        Margin="5">
-            <ContentControl.Resources>
-                <!-- DataTemplate for SceneExplorerViewModel -->
-                <DataTemplate DataType="{x:Type viewModels:SceneExplorerViewModel}">
-                    <views:SceneExplorerView DataContext="{Binding}"/>
-                </DataTemplate>
+        <!-- Split Layout: Scene Explorer (Left) | Properties Editor (Right) -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" MinWidth="300"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="1*" MinWidth="300"/>
+            </Grid.ColumnDefinitions>
 
-                <!-- DataTemplate for PropertiesEditorViewModel -->
-                <DataTemplate DataType="{x:Type viewModels:PropertiesEditorViewModel}">
-                    <views:PropertiesEditorView DataContext="{Binding}"/>
-                </DataTemplate>
-            </ContentControl.Resources>
-        </ContentControl>
+            <!-- Left Panel: Scene Explorer -->
+            <Border Grid.Column="0" BorderBrush="#CCCCCC" BorderThickness="0,0,1,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Scene Explorer Header -->
+                    <Border Grid.Row="0" Background="#F5F5F5" Padding="10,5" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1">
+                        <TextBlock Text="Scene Explorer"
+                                   FontWeight="Bold"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- Scene Explorer Content -->
+                    <ContentControl Grid.Row="1"
+                                    Content="{Binding SceneExplorerViewModel}"
+                                    Margin="0">
+                        <ContentControl.Resources>
+                            <DataTemplate DataType="{x:Type viewModels:SceneExplorerViewModel}">
+                                <views:SceneExplorerView DataContext="{Binding}"/>
+                            </DataTemplate>
+                        </ContentControl.Resources>
+                    </ContentControl>
+                </Grid>
+            </Border>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1"
+                          Width="5"
+                          Background="#CCCCCC"
+                          VerticalAlignment="Stretch"
+                          HorizontalAlignment="Center"
+                          ResizeBehavior="PreviousAndNext"/>
+
+            <!-- Right Panel: Properties Editor -->
+            <Border Grid.Column="2">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Properties Editor Header -->
+                    <Border Grid.Row="0" Background="#F5F5F5" Padding="10,5" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1">
+                        <TextBlock Text="Properties Editor"
+                                   FontWeight="Bold"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- Properties Editor Content -->
+                    <ContentControl Grid.Row="1"
+                                    Content="{Binding PropertiesEditorViewModel}"
+                                    Margin="0">
+                        <ContentControl.Resources>
+                            <DataTemplate DataType="{x:Type viewModels:PropertiesEditorViewModel}">
+                                <views:PropertiesEditorView DataContext="{Binding}"/>
+                            </DataTemplate>
+                        </ContentControl.Resources>
+                    </ContentControl>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

@@ -1,6 +1,7 @@
 #nullable enable
 using DANCustomTools.Core.Abstractions;
 using DANCustomTools.MVVM;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -11,93 +12,54 @@ namespace DANCustomTools.Tools.Editor.ViewModels
     public class EditorMainViewModel : ViewModelBase
     {
         private readonly IToolManager _toolManager;
-        private readonly IToolContext _toolContext;
-        private ViewModelBase? _currentSubToolViewModel;
-        private string _currentSubToolName = "None";
+        private readonly IServiceProvider _serviceProvider;
 
-        public ObservableCollection<ISubTool> SubTools { get; } = new();
+        public DANCustomTools.ViewModels.SceneExplorerViewModel? SceneExplorerViewModel { get; }
+        public DANCustomTools.ViewModels.PropertiesEditorViewModel? PropertiesEditorViewModel { get; }
 
-        public ViewModelBase? CurrentSubToolViewModel
-        {
-            get => _currentSubToolViewModel;
-            set
-            {
-                _currentSubToolViewModel = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public string CurrentSubToolName
-        {
-            get => _currentSubToolName;
-            set
-            {
-                _currentSubToolName = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public ICommand SwitchToSceneExplorerCommand { get; }
-        public ICommand SwitchToPropertiesEditorCommand { get; }
-
-        public EditorMainViewModel(IToolManager toolManager, IToolContext toolContext)
+        public EditorMainViewModel(IToolManager toolManager, IServiceProvider serviceProvider)
         {
             _toolManager = toolManager ?? throw new ArgumentNullException(nameof(toolManager));
-            _toolContext = toolContext ?? throw new ArgumentNullException(nameof(toolContext));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
-            SwitchToSceneExplorerCommand = new RelayCommand(() => SwitchToSubTool("SceneExplorer"));
-            SwitchToPropertiesEditorCommand = new RelayCommand(() => SwitchToSubTool("PropertiesEditor"));
-
-            // Subscribe to tool manager events
-            _toolManager.CurrentSubToolChanged += OnCurrentSubToolChanged;
-
-            // Initialize sub tools collection
-            LoadSubTools();
+            // Initialize both SubTool ViewModels directly
+            SceneExplorerViewModel = CreateSceneExplorerViewModel();
+            PropertiesEditorViewModel = CreatePropertiesEditorViewModel();
         }
 
-        private void LoadSubTools()
-        {
-            var editorTool = _toolManager.GetMainTool("Editor");
-            if (editorTool != null)
-            {
-                SubTools.Clear();
-                foreach (var subTool in editorTool.SubTools)
-                {
-                    SubTools.Add(subTool);
-                }
-            }
-        }
-
-        private void SwitchToSubTool(string subToolName)
+        private DANCustomTools.ViewModels.SceneExplorerViewModel? CreateSceneExplorerViewModel()
         {
             try
             {
-                _toolManager.SwitchToSubTool("Editor", subToolName);
+                return _serviceProvider.GetService<DANCustomTools.ViewModels.SceneExplorerViewModel>();
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                // Handle tool not found error
-                System.Diagnostics.Debug.WriteLine($"Error switching to subtool: {ex.Message}");
+                // Log error but don't crash
+                System.Diagnostics.Debug.WriteLine($"Error creating SceneExplorerViewModel: {ex.Message}");
+                return null;
             }
         }
 
-        private void OnCurrentSubToolChanged(object? sender, ISubTool? subTool)
+        private DANCustomTools.ViewModels.PropertiesEditorViewModel? CreatePropertiesEditorViewModel()
         {
-            if (subTool != null && subTool.ParentTool.Name == "Editor")
+            try
             {
-                CurrentSubToolViewModel = subTool.CreateViewModel();
-                CurrentSubToolName = subTool.DisplayName;
+                return _serviceProvider.GetService<DANCustomTools.ViewModels.PropertiesEditorViewModel>();
             }
-            else
+            catch (Exception ex)
             {
-                CurrentSubToolViewModel = null;
-                CurrentSubToolName = "None";
+                // Log error but don't crash
+                System.Diagnostics.Debug.WriteLine($"Error creating PropertiesEditorViewModel: {ex.Message}");
+                return null;
             }
         }
 
         public override void Dispose()
         {
-            _toolManager.CurrentSubToolChanged -= OnCurrentSubToolChanged;
+            // Dispose child ViewModels
+            SceneExplorerViewModel?.Dispose();
+            PropertiesEditorViewModel?.Dispose();
             base.Dispose();
         }
     }

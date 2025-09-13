@@ -1,9 +1,6 @@
 ﻿using DANCustomTools.Core.Abstractions;
 using DANCustomTools.Core.Services;
 using DANCustomTools.Services;
-using DANCustomTools.Tools.Editor;
-using DANCustomTools.Tools.Editor.SubTools.PropertiesEditor;
-using DANCustomTools.Tools.Editor.SubTools.SceneExplorer;
 using DANCustomTools.Tools.Editor.ViewModels;
 using DANCustomTools.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +20,14 @@ namespace DANCustomTools
             _host = CreateHostBuilder(e.Args).Build();
             ServiceProvider = _host.Services;
 
+            // Ensure tools are initialized
+            var toolInitializer = ServiceProvider.GetRequiredService<IToolInitializer>();
+            if (!toolInitializer.IsInitialized)
+            {
+                var logService = ServiceProvider.GetService<ILogService>();
+                logService?.Warning("Tool initializer was not properly initialized during DI setup");
+            }
+
             base.OnStartup(e);
         }
 
@@ -35,53 +40,47 @@ namespace DANCustomTools
 
         private static void ConfigureServices(IServiceCollection services)
         {
+            // 1. Core Infrastructure Services
+            ConfigureCoreServices(services);
+
+            // 2. Tool Framework Services
+            ConfigureToolFramework(services);
+
+            // 3. ViewModels
+            ConfigureViewModels(services);
+        }
+
+        private static void ConfigureCoreServices(IServiceCollection services)
+        {
             // Core Services - Register in dependency order
             services.AddSingleton<ILogService, ConsoleLogService>();
-            services.AddSingleton<IEngineHostService>(serviceProvider =>
+            services.AddSingleton<IEngineHostService, EngineHostService>();
+            services.AddSingleton<ISceneExplorerService, SceneExplorerService>();
+            services.AddSingleton<IPropertiesEditorService, PropertiesEditorService>();
+        }
+
+        private static void ConfigureToolFramework(IServiceCollection services)
+        {
+            // Tool Framework Core
+            services.AddSingleton<IToolManager, ToolManager>();
+            services.AddSingleton<IToolContext, ToolContext>();
+
+            // Tool Registration and Configuration
+            services.AddSingleton<IToolConfigurationService, ToolConfigurationService>();
+
+            // Post-configuration step - this will run after container is built
+            services.AddSingleton<IToolInitializer>(serviceProvider =>
             {
-                var logService = serviceProvider.GetRequiredService<ILogService>();
-                return new EngineHostService(logService);
+                var toolConfig = serviceProvider.GetRequiredService<IToolConfigurationService>();
+                var initializer = new ToolInitializer(toolConfig);
+                initializer.Initialize(serviceProvider);
+                return initializer;
             });
-            services.AddSingleton<ISceneExplorerService>(serviceProvider =>
-            {
-                var logService = serviceProvider.GetRequiredService<ILogService>();
-                var engineHost = serviceProvider.GetRequiredService<IEngineHostService>();
-                return new SceneExplorerService(logService, engineHost);
-            });
-            services.AddSingleton<IPropertiesEditorService>(serviceProvider =>
-            {
-                var logService = serviceProvider.GetRequiredService<ILogService>();
-                var engineHost = serviceProvider.GetRequiredService<IEngineHostService>();
-                return new PropertiesEditorService(logService, engineHost);
-            });
+        }
 
-            // Tool Framework Services
-            services.AddSingleton<IToolManager>(serviceProvider =>
-            {
-                var toolManager = new ToolManager();
-                var toolContext = new ToolContext(serviceProvider, toolManager);
-
-                // Create and register EditorMainTool
-                var editorTool = new EditorMainTool(serviceProvider, toolContext);
-
-                // Register sub tools
-                var sceneExplorerSubTool = new SceneExplorerSubTool(serviceProvider, toolContext, editorTool);
-                var propertiesEditorSubTool = new PropertiesEditorSubTool(serviceProvider, toolContext, editorTool);
-
-                editorTool.RegisterSubTool(sceneExplorerSubTool);
-                editorTool.RegisterSubTool(propertiesEditorSubTool);
-
-                // Register main tool and initialize
-                toolManager.RegisterMainTool(editorTool);
-                toolManager.Initialize();
-
-                return toolManager;
-            });
-
-            services.AddSingleton<IToolContext>(serviceProvider =>
-                new ToolContext(serviceProvider, serviceProvider.GetRequiredService<IToolManager>()));
-
-            // ViewModels
+        private static void ConfigureViewModels(IServiceCollection services)
+        {
+            // ViewModels - Register as Transient for fresh instances
             services.AddTransient<MainViewModel>();
             services.AddTransient<EditorMainViewModel>();
             services.AddTransient<SceneExplorerViewModel>();
