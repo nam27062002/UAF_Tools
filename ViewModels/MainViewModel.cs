@@ -25,11 +25,13 @@ namespace DANCustomTools.ViewModels
         }
 
         public ICommand SwitchToEditorCommand { get; }
+        public ICommand SwitchToAssetsCookerCommand { get; }
 
         public MainViewModel(IToolManager toolManager)
         {
             _toolManager = toolManager ?? throw new ArgumentNullException(nameof(toolManager));
             SwitchToEditorCommand = new RelayCommand(() => SwitchToMainTool("Editor"));
+            SwitchToAssetsCookerCommand = new RelayCommand(() => SwitchToMainTool("AssetsCooker"));
 
             // Subscribe to tool manager events
             _toolManager.CurrentMainToolChanged += OnCurrentMainToolChanged;

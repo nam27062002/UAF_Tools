@@ -1,6 +1,7 @@
 #nullable enable
 using DANCustomTools.Core.Abstractions;
 using DANCustomTools.Services;
+using DANCustomTools.Tools.AssetsCooker;
 using DANCustomTools.Tools.Editor;
 using DANCustomTools.Tools.Editor.SubTools.PropertiesEditor;
 using DANCustomTools.Tools.Editor.SubTools.SceneExplorer;
@@ -20,6 +21,9 @@ namespace DANCustomTools.Core.Services
             {
                 // Configure EditorMainTool
                 ConfigureEditorTool(serviceProvider, toolManager, toolContext);
+
+                // Configure AssetsCookerMainTool
+                ConfigureAssetsCookerTool(serviceProvider, toolManager, toolContext);
 
                 // Initialize all tools
                 toolManager.Initialize();
@@ -49,6 +53,18 @@ namespace DANCustomTools.Core.Services
 
             // Register with ToolManager
             toolManager.RegisterMainTool(editorTool);
+        }
+
+        private static void ConfigureAssetsCookerTool(IServiceProvider serviceProvider, IToolManager toolManager, IToolContext toolContext)
+        {
+            // Create AssetsCookerMainTool
+            var assetsCookerTool = new AssetsCookerMainTool(serviceProvider, toolContext);
+
+            // AssetsCooker doesn't have SubTools initially
+            // Future SubTools can be registered here
+
+            // Register with ToolManager
+            toolManager.RegisterMainTool(assetsCookerTool);
         }
 
         public void RegisterMainTool<T>() where T : class, IMainTool

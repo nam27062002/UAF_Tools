@@ -1,6 +1,7 @@
 ﻿using DANCustomTools.Core.Abstractions;
 using DANCustomTools.Core.Services;
 using DANCustomTools.Services;
+using DANCustomTools.Tools.AssetsCooker.ViewModels;
 using DANCustomTools.Tools.Editor.ViewModels;
 using DANCustomTools.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -83,6 +84,7 @@ namespace DANCustomTools
             // ViewModels - Register as Transient for fresh instances
             services.AddTransient<MainViewModel>();
             services.AddTransient<EditorMainViewModel>();
+            services.AddTransient<AssetsCookerMainViewModel>();
             services.AddTransient<SceneExplorerViewModel>();
             services.AddTransient<PropertiesEditorViewModel>();
         }
