@@ -1,3 +1,54 @@
-bin/
-obj/
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Rider
 .idea/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# Other
+*.vspscc
+*.vssscc
+*_i.c
+*_p.c
+*.ncb
+*.pch
+*.tlb
+*.tlh
+*.tmp
+*.tmp_proj
+*.log
+*.vsix
+*.ilk
+*.pdb
+*.sbr
+*.metagen
