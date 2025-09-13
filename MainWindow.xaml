@@ -5,22 +5,36 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DANCustomTools"
         xmlns:viewModels="clr-namespace:DANCustomTools.ViewModels"
+        xmlns:editorViewModels="clr-namespace:DANCustomTools.Tools.Editor.ViewModels"
         xmlns:views="clr-namespace:DANCustomTools.Views"
+        xmlns:editorViews="clr-namespace:DANCustomTools.Tools.Editor.Views"
         mc:Ignorable="d"
         Title="UAF Tools" Height="600" Width="900">
 
     <Window.Resources>
+        <!-- DataTemplate for EditorMainViewModel -->
+        <DataTemplate DataType="{x:Type editorViewModels:EditorMainViewModel}">
+            <editorViews:EditorMainView DataContext="{Binding}"/>
+        </DataTemplate>
+
+        <!-- DataTemplate for SceneExplorerViewModel -->
         <DataTemplate DataType="{x:Type viewModels:SceneExplorerViewModel}">
             <views:SceneExplorerView DataContext="{Binding}"/>
+        </DataTemplate>
+
+        <!-- DataTemplate for PropertiesEditorViewModel -->
+        <DataTemplate DataType="{x:Type viewModels:PropertiesEditorViewModel}">
+            <views:PropertiesEditorView DataContext="{Binding}"/>
         </DataTemplate>
     </Window.Resources>
 
     <DockPanel>
         <StackPanel DockPanel.Dock="Left" Width="200" Background="#f0f0f0">
-            <TextBlock Text="Tools" FontSize="16" Margin="10" FontWeight="Bold"/>
-            <Button Content="Scene Explorer" Command="{Binding OpenSceneExplorerCommand}" Margin="10,0"/>
+            <TextBlock Text="Main Tools" FontSize="16" Margin="10" FontWeight="Bold"/>
+            <Button Content="Editor" Command="{Binding SwitchToEditorCommand}" Margin="10,0"/>
+            <!-- Add more MainTool buttons here as needed -->
         </StackPanel>
 
-        <ContentControl Content="{Binding CurrentViewModel}" />
+        <ContentControl Content="{Binding CurrentToolViewModel}" />
     </DockPanel>
 </Window>

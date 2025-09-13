@@ -1,9 +1,15 @@
-﻿using DANCustomTools.Services;
+﻿using DANCustomTools.Core.Abstractions;
+using DANCustomTools.Core.Services;
+using DANCustomTools.Services;
+using DANCustomTools.Tools.Editor;
+using DANCustomTools.Tools.Editor.SubTools.PropertiesEditor;
+using DANCustomTools.Tools.Editor.SubTools.SceneExplorer;
+using DANCustomTools.Tools.Editor.ViewModels;
 using DANCustomTools.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Windows;
 using System;
+using System.Windows;
 namespace DANCustomTools
 {
     public partial class App : System.Windows.Application
@@ -29,7 +35,7 @@ namespace DANCustomTools
 
         private static void ConfigureServices(IServiceCollection services)
         {
-            // Services - Register in dependency order
+            // Core Services - Register in dependency order
             services.AddSingleton<ILogService, ConsoleLogService>();
             services.AddSingleton<IEngineHostService>(serviceProvider =>
             {
@@ -49,12 +55,37 @@ namespace DANCustomTools
                 return new PropertiesEditorService(logService, engineHost);
             });
 
+            // Tool Framework Services
+            services.AddSingleton<IToolManager>(serviceProvider =>
+            {
+                var toolManager = new ToolManager();
+                var toolContext = new ToolContext(serviceProvider, toolManager);
+
+                // Create and register EditorMainTool
+                var editorTool = new EditorMainTool(serviceProvider, toolContext);
+
+                // Register sub tools
+                var sceneExplorerSubTool = new SceneExplorerSubTool(serviceProvider, toolContext, editorTool);
+                var propertiesEditorSubTool = new PropertiesEditorSubTool(serviceProvider, toolContext, editorTool);
+
+                editorTool.RegisterSubTool(sceneExplorerSubTool);
+                editorTool.RegisterSubTool(propertiesEditorSubTool);
+
+                // Register main tool and initialize
+                toolManager.RegisterMainTool(editorTool);
+                toolManager.Initialize();
+
+                return toolManager;
+            });
+
+            services.AddSingleton<IToolContext>(serviceProvider =>
+                new ToolContext(serviceProvider, serviceProvider.GetRequiredService<IToolManager>()));
+
             // ViewModels
             services.AddTransient<MainViewModel>();
+            services.AddTransient<EditorMainViewModel>();
             services.AddTransient<SceneExplorerViewModel>();
             services.AddTransient<PropertiesEditorViewModel>();
-
-            // Views will be resolved through ViewModels via DataTemplates
         }
 
         protected override void OnExit(ExitEventArgs e)
