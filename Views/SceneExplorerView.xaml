@@ -1,0 +1,153 @@
+<UserControl x:Class="DANCustomTools.Views.SceneExplorerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:converters="clr-namespace:DANCustomTools.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="800">
+    
+    <UserControl.Resources>
+        <converters:ObjectTypeConverter x:Key="ObjectTypeConverter"/>
+        <converters:BoolToOnlineStatusConverter x:Key="BoolToOnlineStatusConverter"/>
+        <converters:BoolToStatusColorConverter x:Key="BoolToStatusColorConverter"/>
+        <converters:ConnectionStatusColorConverter x:Key="ConnectionStatusColorConverter"/>
+        <converters:TreeItemIconConverter x:Key="TreeItemIconConverter"/>
+        <converters:TreeItemTextFallbackConverter x:Key="TreeItemTextFallbackConverter"/>
+        <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        
+        <!-- Modern Button Style -->
+        <Style x:Key="ModernButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#f8f9fa"/>
+            <Setter Property="BorderBrush" Value="#dee2e6"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#e9ecef"/>
+                                <Setter Property="BorderBrush" Value="#adb5bd"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#dee2e6"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#f8f9fa"/>
+                                <Setter Property="Foreground" Value="#6c757d"/>
+                                <Setter Property="BorderBrush" Value="#e9ecef"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    
+    <Grid Background="#f5f5f5" Focusable="True">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Status Bar -->
+        <DockPanel Grid.Row="0" Background="#e3e3e3" Height="28">
+            <Border DockPanel.Dock="Left" Background="#4a90e2" Width="4"/>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
+                <TextBlock Text="{Binding ConnectionStatus}" FontWeight="Bold" Margin="0,0,10,0"
+                          Foreground="{Binding ConnectionStatus, Converter={StaticResource ConnectionStatusColorConverter}}"/>
+                <Rectangle Fill="Gray" Width="1" Height="16" Margin="5,0"/>
+                <TextBlock Text="{Binding Host, StringFormat='Host: {0}'}" Margin="10,0,0,0" Foreground="#666"/>
+                <TextBlock Text="{Binding Port, StringFormat='  Port: {0}'}" Margin="10,0,0,0" Foreground="#666"/>
+            </StackPanel>
+        </DockPanel>
+        
+        <!-- Action Buttons -->
+        <Border Grid.Row="1" Background="White" BorderBrush="#ddd" BorderThickness="0,1">
+            <StackPanel Orientation="Horizontal" Margin="8,4"/>
+        </Border>
+        
+        <!-- Main Content -->
+        <Grid Grid.Row="2" Margin="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" MinWidth="250"/>
+                <ColumnDefinition Width="6"/>
+                <ColumnDefinition Width="3*" MinWidth="350"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Scene Tree View -->
+            <Border Grid.Column="0" Background="White" BorderBrush="#ddd" BorderThickness="1" CornerRadius="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <Border Grid.Row="0" Background="#f8f9fa" BorderBrush="#ddd" BorderThickness="0,0,0,1">
+                        <TextBlock Text="Scene Tree" FontWeight="Bold" Margin="8,6" Foreground="#495057"/>
+                    </Border>
+                    
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="No data" Foreground="#999" Margin="8,4"
+                                   Visibility="{Binding SceneTreeItems.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
+                        <TreeView Grid.Row="1" 
+                                  Name="SceneTreeView"
+                                  ItemsSource="{Binding SceneTreeItems}"
+                                  Margin="4"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  VirtualizingStackPanel.IsVirtualizing="False"
+                                  ScrollViewer.CanContentScroll="False"
+                                  SelectedItemChanged="TreeView_SelectedItemChanged"
+                                  MouseRightButtonUp="TreeView_MouseRightButtonUp"
+                                  KeyDown="TreeView_KeyDown">
+                            <TreeView.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem">
+                                    <Setter Property="IsExpanded" Value="True"/>
+                                </Style>
+                            </TreeView.ItemContainerStyle>
+                            <TreeView.ItemTemplate>
+                                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                    <StackPanel Orientation="Horizontal" Margin="2">
+                                        <Image Source="{Binding ItemType, Converter={StaticResource TreeItemIconConverter}}" 
+                                               Width="16" Height="16" Margin="0,0,4,0"
+                                               VerticalAlignment="Center" 
+                                               Stretch="Uniform" 
+                                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" FontSize="11"/>
+                                    </StackPanel>
+                                </HierarchicalDataTemplate>
+                            </TreeView.ItemTemplate>
+                        </TreeView>
+                    </Grid>
+                </Grid>
+            </Border>
+            
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="#ddd" Width="1"/>
+            
+            <!-- Properties Editor View -->
+            <ContentPresenter Grid.Column="2" Content="{Binding PropertiesEditor}"/>
+        </Grid>
+        
+        <!-- Bottom Status -->
+        <Border Grid.Row="3" Background="#e3e3e3" Height="20" BorderBrush="#ddd" BorderThickness="0,1,0,0">
+            <TextBlock Text="Ready" Margin="8,2" FontSize="10" Foreground="#6c757d" VerticalAlignment="Center"/>
+        </Border>
+    </Grid>
+</UserControl>
