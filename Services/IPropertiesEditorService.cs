@@ -10,6 +10,7 @@ namespace DANCustomTools.Services
     {
         event EventHandler<PropertyModel>? PropertiesUpdated;
         event EventHandler<string>? DataPathUpdated;
+        event EventHandler<bool>? ConnectionStatusChanged;
         
         Task StartAsync(string[] arguments, CancellationToken cancellationToken = default);
         Task StopAsync(CancellationToken cancellationToken = default);

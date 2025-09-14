@@ -4,9 +4,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:converters="clr-namespace:DANCustomTools.Converters"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="800">
-    
+
     <UserControl.Resources>
         <converters:ObjectTypeConverter x:Key="ObjectTypeConverter"/>
         <converters:BoolToOnlineStatusConverter x:Key="BoolToOnlineStatusConverter"/>
@@ -15,7 +15,7 @@
         <converters:TreeItemIconConverter x:Key="TreeItemIconConverter"/>
         <converters:TreeItemTextFallbackConverter x:Key="TreeItemTextFallbackConverter"/>
         <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
-        
+
         <!-- Modern Button Style -->
         <Style x:Key="ModernButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="#f8f9fa"/>
@@ -53,7 +53,7 @@
             </Setter>
         </Style>
     </UserControl.Resources>
-    
+
     <Grid Background="#f5f5f5" Focusable="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -61,24 +61,12 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
-        <!-- Status Bar -->
-        <DockPanel Grid.Row="0" Background="#e3e3e3" Height="28">
-            <Border DockPanel.Dock="Left" Background="#4a90e2" Width="4"/>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
-                <TextBlock Text="{Binding ConnectionStatus}" FontWeight="Bold" Margin="0,0,10,0"
-                          Foreground="{Binding ConnectionStatus, Converter={StaticResource ConnectionStatusColorConverter}}"/>
-                <Rectangle Fill="Gray" Width="1" Height="16" Margin="5,0"/>
-                <TextBlock Text="{Binding Host, StringFormat='Host: {0}'}" Margin="10,0,0,0" Foreground="#666"/>
-                <TextBlock Text="{Binding Port, StringFormat='  Port: {0}'}" Margin="10,0,0,0" Foreground="#666"/>
-            </StackPanel>
-        </DockPanel>
-        
+
         <!-- Action Buttons -->
         <Border Grid.Row="1" Background="White" BorderBrush="#ddd" BorderThickness="0,1">
             <StackPanel Orientation="Horizontal" Margin="8,4"/>
         </Border>
-        
+
         <!-- Main Content -->
         <Grid Grid.Row="2" Margin="4">
             <!-- Scene Tree View -->
@@ -133,7 +121,7 @@
                 </Grid>
             </Border>
         </Grid>
-        
+
         <!-- Bottom Status -->
         <Border Grid.Row="3" Background="#e3e3e3" Height="20" BorderBrush="#ddd" BorderThickness="0,1,0,0">
             <TextBlock Text="Ready" Margin="8,2" FontSize="10" Foreground="#6c757d" VerticalAlignment="Center"/>

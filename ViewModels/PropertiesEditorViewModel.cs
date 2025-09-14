@@ -3,6 +3,7 @@ using System;
 using System.Windows.Input;
 using System.Xml.Linq;
 using System.Linq;
+using DANCustomTools.Core.ViewModels;
 using DANCustomTools.MVVM;
 using DANCustomTools.Models.PropertiesEditor;
 using DANCustomTools.Models.SceneExplorer;
@@ -10,21 +11,21 @@ using DANCustomTools.Services;
 
 namespace DANCustomTools.ViewModels
 {
-    public partial class PropertiesEditorViewModel : ViewModelBase
+    public partial class PropertiesEditorViewModel : SubToolViewModelBase
     {
         private readonly IPropertiesEditorService _propertiesService;
-        private readonly ILogService _logService;
-        
+
         private PropertyModel _currentProperty = new();
         private string _connectionStatus = "Disconnected";
         private bool _hasData = false;
         private string _xmlDisplayText = string.Empty;
-        private string _objectDisplayName = string.Empty;
         private System.Collections.ObjectModel.ObservableCollection<SimplePropertyRow> _parsedProperties = new();
         private System.Collections.ObjectModel.ObservableCollection<SimplePropertyRow> _visibleProperties = new();
         private bool _suppressSend = false;
         private DateTime _lastSendUtc = DateTime.MinValue;
         private string _dataPath = string.Empty;
+
+        public override string SubToolName => "Properties Editor";
 
         public PropertyModel CurrentProperty
         {
@@ -65,12 +66,6 @@ namespace DANCustomTools.ViewModels
             }
         }
 
-        public string ObjectDisplayName
-        {
-            get => _objectDisplayName;
-            private set => SetProperty(ref _objectDisplayName, value);
-        }
-
         public System.Collections.ObjectModel.ObservableCollection<SimplePropertyRow> ParsedProperties
         {
             get => _parsedProperties;
@@ -94,13 +89,16 @@ namespace DANCustomTools.ViewModels
         public ICommand ToggleCategoryCommand { get; }
 
         public PropertiesEditorViewModel(IPropertiesEditorService propertiesService, ILogService logService)
+            : base(logService)
         {
             _propertiesService = propertiesService ?? throw new ArgumentNullException(nameof(propertiesService));
-            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
 
             // Subscribe to service events
             _propertiesService.PropertiesUpdated += OnPropertiesUpdated;
             _propertiesService.DataPathUpdated += OnDataPathUpdated;
+
+            // Subscribe to connection events
+            SubscribeToConnectionEvents();
 
             // Initialize commands
             DumpToFileCommand = new RelayCommand(() => ExecuteDumpToFile(null), () => CanExecuteDumpToFile(null));
@@ -118,11 +116,8 @@ namespace DANCustomTools.ViewModels
                 return;
             }
 
-            _logService.Info($"Loading properties for object: {objectModel.FriendlyName} (Ref: {objectModel.ObjectRef})");
-            
-            // Update display name
-            ObjectDisplayName = $"Properties: {objectModel.FriendlyName}";
-            
+            LogService.Info($"Loading properties for object: {objectModel.FriendlyName} (Ref: {objectModel.ObjectRef})");
+
             // Request properties from engine
             _propertiesService.RequestObjectProperties(objectModel.ObjectRef);
         }
@@ -152,12 +147,12 @@ namespace DANCustomTools.ViewModels
                     }
                     catch (Exception ex)
                     {
-                        _logService.Info($"XML parsing for formatting failed: {ex.Message}");
+                        LogService.Info($"XML parsing for formatting failed: {ex.Message}");
                         XmlDisplayText = propertyModel.XmlData;
                     }
                 }
 
-                _logService.Info($"Properties updated for object ref: {propertyModel.ObjectRef}");
+                LogService.Info($"Properties updated for object ref: {propertyModel.ObjectRef}");
                 _suppressSend = false;
             });
         }
@@ -165,12 +160,13 @@ namespace DANCustomTools.ViewModels
         private void OnDataPathUpdated(object? sender, string dataPath)
         {
             DataPath = dataPath;
-            _logService.Info($"PropertiesEditor data path updated: {dataPath}");
+            LogService.Info($"PropertiesEditor data path updated: {dataPath}");
         }
 
         private void UpdateConnectionStatus()
         {
-            ConnectionStatus = _propertiesService.IsConnected ? "Connected" : "Disconnected";
+            IsConnected = _propertiesService.IsConnected;
+            ConnectionStatus = IsConnected ? "Connected" : "Disconnected";
         }
 
         private void ExecuteDumpToFile(object? parameter)
@@ -178,9 +174,9 @@ namespace DANCustomTools.ViewModels
             // This would typically open a SaveFileDialog
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             var fileName = $"properties_dump_{timestamp}.xml";
-            
+
             _propertiesService.DumpToFile(fileName);
-            _logService.Info($"Requested dump to file: {fileName}");
+            LogService.Info($"Requested dump to file: {fileName}");
         }
 
         private bool CanExecuteDumpToFile(object? parameter)
@@ -196,8 +192,7 @@ namespace DANCustomTools.ViewModels
         public void ClearProperties()
         {
             _propertiesService.ClearProperties();
-            ObjectDisplayName = "Properties: (No object selected)";
-            _logService.Info("Properties cleared");
+            LogService.Info("Properties cleared");
         }
 
         // Called by the View when TechnoControls XMLPropertyGrid has parsed content and raises change
@@ -212,6 +207,16 @@ namespace DANCustomTools.ViewModels
             {
                 grid.Clear();
             }
+        }
+
+        protected override void SubscribeToConnectionEvents()
+        {
+            _propertiesService.ConnectionStatusChanged += OnConnectionStatusChanged;
+        }
+
+        protected override void UnsubscribeFromConnectionEvents()
+        {
+            _propertiesService.ConnectionStatusChanged -= OnConnectionStatusChanged;
         }
 
         public override void Dispose()

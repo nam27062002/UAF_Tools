@@ -1,23 +1,17 @@
 #nullable enable
+using DANCustomTools.Core.Services;
 using DANCustomTools.Models.SceneExplorer;
 using PluginCommon;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace DANCustomTools.Services
 {
-    public class SceneExplorerService : ISceneExplorerService, IDisposable
+    public class SceneExplorerService : EnginePluginServiceBase, ISceneExplorerService
     {
-        private readonly ILogService _logService;
-        private readonly IEngineHostService _engineHost;
-        private pluginWrapper? _plugin;
-        private CancellationTokenSource? _cancellationTokenSource;
-        private bool _isConnected;
-        private readonly object _connectionLock = new();
 
         // Queues for thread-safe communication
         private readonly Queue<string> _sceneSelectionQueue = new();
@@ -27,78 +21,18 @@ namespace DANCustomTools.Services
         private readonly Queue<(uint objectRef, float dx, float dy, float dz)> _duplicateQueue = new();
         private string? _offlineSceneTreePath;
 
-        public event EventHandler<bool>? ConnectionStatusChanged;
+        public override string PluginName => "SceneExplorer_Plugin";
+
         public event EventHandler<SceneTreeModel>? OnlineSceneTreeUpdated;
         public event EventHandler<List<SceneTreeModel>>? OfflineSceneTreesUpdated;
         public event EventHandler<uint>? ObjectSelectedFromRuntime;
 
-        public bool IsConnected
-        {
-            get
-            {
-                lock (_connectionLock)
-                {
-                    return _isConnected;
-                }
-            }
-        }
-
         public SceneExplorerService(ILogService logService, IEngineHostService engineHost)
+            : base(logService, engineHost)
         {
-            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
-            _engineHost = engineHost ?? throw new ArgumentNullException(nameof(engineHost));
         }
 
-        public async Task StartAsync(string[] arguments, CancellationToken cancellationToken = default)
-        {
-            if (_cancellationTokenSource != null)
-                throw new InvalidOperationException("Service is already started");
 
-            _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
-            try
-            {
-                _engineHost.Initialize(arguments);
-
-                // Set culture for decimal separator
-                var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
-                culture.NumberFormat.NumberDecimalSeparator = ".";
-                Thread.CurrentThread.CurrentCulture = culture;
-
-                _logService.Info($"Starting SceneExplorer service on port {_engineHost.Settings?.Port}");
-
-                // Start background network thread
-                await Task.Run(() => NetworkThreadLoop(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
-            }
-            catch (Exception ex)
-            {
-                _logService.Error("Failed to start SceneExplorer service", ex);
-                throw;
-            }
-        }
-
-        public Task StopAsync(CancellationToken cancellationToken = default)
-        {
-            if (_cancellationTokenSource == null)
-                return Task.CompletedTask;
-
-            _logService.Info("Stopping SceneExplorer service");
-
-            _cancellationTokenSource.Cancel();
-
-            if (_isConnected)
-            {
-                _engineHost.Disconnect();
-                lock (_connectionLock)
-                {
-                    _isConnected = false;
-                }
-            }
-
-            _plugin = null;
-            ConnectionStatusChanged?.Invoke(this, false);
-            return Task.CompletedTask;
-        }
 
         public void SelectScene(string uniqueScene)
         {
@@ -142,7 +76,7 @@ namespace DANCustomTools.Services
 
         public void RequestSceneTree()
         {
-            if (_isConnected && _plugin != null)
+            if (IsConnected && Plugin != null)
             {
                 SendSceneTreeRequest();
             }
@@ -153,112 +87,24 @@ namespace DANCustomTools.Services
             _offlineSceneTreePath = path;
         }
 
-        private void NetworkThreadLoop(CancellationToken cancellationToken)
+
+
+        protected override void ProcessMessage(blobWrapper blob)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            var command = "";
+            blob.extract(ref command);
+
+            switch (command)
             {
-                try
-                {
-                    var wasConnected = _isConnected;
-                    UpdateConnectionStatus();
-
-                    // Receive messages if connected
-                    if (_isConnected && _plugin != null)
-                    {
-                        _engineHost.Update();
-                        ProcessIncomingMessages();
-
-                        // Handle first-time connection
-                        if (!wasConnected)
-                        {
-                            RequestSceneTree();
-                        }
-
-                        // Process queued requests
-                        ProcessQueuedRequests();
-                    }
-
-                    Thread.Sleep(100);
-                }
-                catch (Exception ex)
-                {
-                    _logService.Error("Error in network thread", ex);
-                    Thread.Sleep(1000); // Back off on error
-                }
-            }
-        }
-
-        private void UpdateConnectionStatus()
-        {
-            if (!_engineHost.IsInitialized)
-                return;
-
-            var wasConnected = _isConnected;
-            var isCurrentlyConnected = _isConnected;
-
-            if (isCurrentlyConnected)
-            {
-                // Test existing connection via host
-                isCurrentlyConnected = _engineHost.ConnectIfNeeded();
-            }
-
-            if (!isCurrentlyConnected)
-            {
-                if (wasConnected)
-                {
-                    _engineHost.Disconnect();
-                    _plugin = null;
-                }
-
-                // Attempt to connect via host
-                isCurrentlyConnected = _engineHost.ConnectIfNeeded();
-
-                if (isCurrentlyConnected)
-                {
-                    _plugin = _engineHost.RegisterPlugin("SceneExplorer_Plugin");
-
-                    var blob = new blobWrapper();
-                    blob.push("PluginId");
-                    blob.push("SceneExplorer_Plugin");
-                    blob.sendToHost();
-                }
-            }
-
-            if (isCurrentlyConnected != wasConnected)
-            {
-                lock (_connectionLock)
-                {
-                    _isConnected = isCurrentlyConnected;
-                }
-
-                ConnectionStatusChanged?.Invoke(this, _isConnected);
-                _logService.Info($"SceneExplorerService connection status: {(_isConnected ? "Connected" : "Disconnected")}");
-            }
-        }
-
-        private void ProcessIncomingMessages()
-        {
-            if (_plugin == null)
-                return;
-
-            var blob = new blobWrapper();
-            while (_plugin.dispatch(blob))
-            {
-                var command = "";
-                blob.extract(ref command);
-
-                switch (command)
-                {
-                    case "SceneTree":
-                        ProcessOnlineSceneTree(blob);
-                        break;
-                    case "SceneTree_Offline":
-                        ProcessOfflineSceneTrees(blob);
-                        break;
-                    case "ObjectsSelectedInRuntime":
-                        ProcessRuntimeSelection(blob);
-                        break;
-                }
+                case "SceneTree":
+                    ProcessOnlineSceneTree(blob);
+                    break;
+                case "SceneTree_Offline":
+                    ProcessOfflineSceneTrees(blob);
+                    break;
+                case "ObjectsSelectedInRuntime":
+                    ProcessRuntimeSelection(blob);
+                    break;
             }
         }
 
@@ -267,12 +113,12 @@ namespace DANCustomTools.Services
             try
             {
                 var sceneTree = ConvertBlobToSceneTreeModel(blob, true);
-                _logService.Info($"SceneTree received: name='{sceneTree.UniqueName}', actors={sceneTree.Actors.Count}, frises={sceneTree.Frises.Count}, children={sceneTree.ChildScenes.Count}");
+                LogService.Info($"SceneTree received: name='{sceneTree.UniqueName}', actors={sceneTree.Actors.Count}, frises={sceneTree.Frises.Count}, children={sceneTree.ChildScenes.Count}");
                 OnlineSceneTreeUpdated?.Invoke(this, sceneTree);
             }
             catch (Exception ex)
             {
-                _logService.Error("Failed to process online scene tree", ex);
+                LogService.Error("Failed to process online scene tree", ex);
             }
         }
 
@@ -294,7 +140,7 @@ namespace DANCustomTools.Services
             }
             catch (Exception ex)
             {
-                _logService.Error("Failed to process offline scene trees", ex);
+                LogService.Error("Failed to process offline scene trees", ex);
             }
         }
 
@@ -308,7 +154,7 @@ namespace DANCustomTools.Services
             }
             catch (Exception ex)
             {
-                _logService.Error("Failed to process runtime selection", ex);
+                LogService.Error("Failed to process runtime selection", ex);
             }
         }
 
@@ -415,7 +261,7 @@ namespace DANCustomTools.Services
             return model;
         }
 
-        private void ProcessQueuedRequests()
+        protected override void ProcessQueuedRequests()
         {
             // Process scene selections
             lock (_sceneSelectionQueue)
@@ -475,84 +321,80 @@ namespace DANCustomTools.Services
             }
         }
 
+        protected override void OnFirstTimeConnected()
+        {
+            RequestSceneTree();
+        }
+
         private void SendSceneTreeRequest()
         {
-            var blob = new blobWrapper();
-            blob.push("SceneExplorer_Plugin");
-            blob.push("SendSceneTree");
-            blob.sendToHost();
+            SendMessage(blob => blob.push("SendSceneTree"));
         }
 
         private void SendOfflineSceneTreeRequest(string path)
         {
-            var blob = new blobWrapper();
-            blob.push("SceneExplorer_Plugin");
-            blob.push("SendSceneTree_Offline");
-            blob.push(path);
-            blob.sendToHost();
+            SendMessage(blob =>
+            {
+                blob.push("SendSceneTree_Offline");
+                blob.push(path);
+            });
         }
 
         private void SendSelectSceneRequest(string sceneName)
         {
-            var blob = new blobWrapper();
-            blob.push("SceneExplorer_Plugin");
-            blob.push("SelectScene");
-            blob.push(sceneName);
-            blob.sendToHost();
+            SendMessage(blob =>
+            {
+                blob.push("SelectScene");
+                blob.push(sceneName);
+            });
         }
 
         private void SendSelectObjectsRequest(IEnumerable<ObjectWithRefModel> objects)
         {
             var onlineObjects = objects.Where(o => o.IsOnline).ToArray();
 
-            var blob = new blobWrapper();
-            blob.push("SceneExplorer_Plugin");
-            blob.push("SelectObjects");
-            blob.push((uint)onlineObjects.Length);
-
-            foreach (var obj in onlineObjects)
+            SendMessage(blob =>
             {
-                blob.push(obj.ObjectRef);
-            }
+                blob.push("SelectObjects");
+                blob.push((uint)onlineObjects.Length);
 
-            blob.sendToHost();
+                foreach (var obj in onlineObjects)
+                {
+                    blob.push(obj.ObjectRef);
+                }
+            });
         }
 
         private void SendRenameRequest(uint objectRef, string newName)
         {
-            var blob = new blobWrapper();
-            blob.push("SceneExplorer_Plugin");
-            blob.push("RenameItem");
-            blob.push(objectRef);
-            blob.push(newName);
-            blob.sendToHost();
+            SendMessage(blob =>
+            {
+                blob.push("RenameItem");
+                blob.push(objectRef);
+                blob.push(newName);
+            });
         }
 
         private void SendDeleteRequest(uint objectRef)
         {
-            var blob = new blobWrapper();
-            blob.push("SceneExplorer_Plugin");
-            blob.push("DeleteItem");
-            blob.push(objectRef);
-            blob.sendToHost();
+            SendMessage(blob =>
+            {
+                blob.push("DeleteItem");
+                blob.push(objectRef);
+            });
         }
 
         private void SendDuplicateRequest(uint objectRef, float dx, float dy, float dz)
         {
-            var blob = new blobWrapper();
-            blob.push("SceneExplorer_Plugin");
-            blob.push("DuplicateAndMoveItem");
-            blob.push(objectRef);
-            blob.push(dx);
-            blob.push(dy);
-            blob.push(dz);
-            blob.sendToHost();
+            SendMessage(blob =>
+            {
+                blob.push("DuplicateAndMoveItem");
+                blob.push(objectRef);
+                blob.push(dx);
+                blob.push(dy);
+                blob.push(dz);
+            });
         }
 
-        public void Dispose()
-        {
-            StopAsync().GetAwaiter().GetResult();
-            _cancellationTokenSource?.Dispose();
-        }
     }
 }

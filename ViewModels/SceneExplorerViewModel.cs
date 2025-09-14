@@ -1,5 +1,6 @@
 #nullable enable
 
+using DANCustomTools.Core.ViewModels;
 using DANCustomTools.MVVM;
 using DANCustomTools.Services;
 using DANCustomTools.Models.SceneExplorer;
@@ -15,10 +16,9 @@ using System.Windows.Input;
 
 namespace DANCustomTools.ViewModels
 {
-    public class SceneExplorerViewModel : ViewModelBase, IDisposable
+    public class SceneExplorerViewModel : SubToolViewModelBase, IDisposable
     {
         // Dependencies
-        private readonly ILogService _logService;
         private readonly ISceneExplorerService _sceneService;
         private readonly IPropertiesEditorService _propertiesService;
         private readonly IEngineHostService _engineHost;
@@ -27,34 +27,15 @@ namespace DANCustomTools.ViewModels
         private readonly string[] _arguments;
 
         // UI Properties
-        private string _connectionStatus = "Disconnected";
-        private int _port;
-        private string _host = "127.0.0.1";
         private ObservableCollection<SceneTreeItemViewModel> _sceneTreeItems = new();
         private PropertiesEditorView _propertiesEditor = null!;
         private ObjectWithRefModel? _selectedObject;
 
+        public override string SubToolName => "Scene Explorer";
+
         // Context menu commands
         public ICommand DuplicateCommand { get; }
         public ICommand DeleteCommand { get; }
-
-        public string ConnectionStatus
-        {
-            get => _connectionStatus;
-            set => SetProperty(ref _connectionStatus, value);
-        }
-
-        public int Port
-        {
-            get => _port;
-            set => SetProperty(ref _port, value);
-        }
-
-        public string Host
-        {
-            get => _host;
-            set => SetProperty(ref _host, value);
-        }
 
         public ObservableCollection<SceneTreeItemViewModel> SceneTreeItems
         {
@@ -79,8 +60,8 @@ namespace DANCustomTools.ViewModels
             ISceneExplorerService sceneService,
             IPropertiesEditorService propertiesService,
             IEngineHostService engineHost)
+            : base(logService)
         {
-            _logService = logService ?? throw new ArgumentNullException(nameof(logService));
             _sceneService = sceneService ?? throw new ArgumentNullException(nameof(sceneService));
             _propertiesService = propertiesService ?? throw new ArgumentNullException(nameof(propertiesService));
             _engineHost = engineHost ?? throw new ArgumentNullException(nameof(engineHost));
@@ -91,27 +72,23 @@ namespace DANCustomTools.ViewModels
             DeleteCommand = new AsyncRelayCommand(ExecuteDeleteAsync, CanExecuteDelete);
 
             // Subscribe to service events
-            _sceneService.ConnectionStatusChanged += OnConnectionStatusChanged;
             _sceneService.OnlineSceneTreeUpdated += OnOnlineSceneTreeUpdated;
             _sceneService.OfflineSceneTreesUpdated += OnOfflineSceneTreesUpdated;
             _sceneService.ObjectSelectedFromRuntime += OnObjectSelectedFromRuntime;
+
+            // Subscribe to connection events
+            SubscribeToConnectionEvents();
 
             // Initialize PropertiesEditor
             InitializePropertiesEditor();
 
             // Start services
             _ = StartServicesAsync(_arguments);
-
-            // Initialize displayed Host/Port from current settings if available
-            if (_engineHost.Settings != null)
-            {
-                Port = _engineHost.Settings.Port;
-            }
         }
 
         private void InitializePropertiesEditor()
         {
-            var propertiesViewModel = new PropertiesEditorViewModel(_propertiesService, _logService);
+            var propertiesViewModel = new PropertiesEditorViewModel(_propertiesService, LogService);
             PropertiesEditor = new PropertiesEditorView
             {
                 ViewModel = propertiesViewModel
@@ -127,23 +104,15 @@ namespace DANCustomTools.ViewModels
                     _sceneService.StartAsync(arguments),
                     _propertiesService.StartAsync(arguments)
                 );
-                _logService.Info("All services started successfully");
+                LogService.Info("All services started successfully");
             }
             catch (Exception ex)
             {
-                _logService.Error("Failed to start one or more services", ex);
+                LogService.Error("Failed to start one or more services", ex);
             }
         }
 
         // Event Handlers
-        private void OnConnectionStatusChanged(object? sender, bool isConnected)
-        {
-            ConnectionStatus = isConnected ? "Connected" : "Disconnected";
-            if (_engineHost.Settings != null)
-            {
-                Port = _engineHost.Settings.Port;
-            }
-        }
 
         private void OnOnlineSceneTreeUpdated(object? sender, SceneTreeModel sceneTree)
         {
@@ -153,8 +122,8 @@ namespace DANCustomTools.ViewModels
                 var items = new ObservableCollection<SceneTreeItemViewModel>();
                 items.Add(treeItem);
                 SceneTreeItems = items;
-                _logService.Info($"Updated scene tree: {sceneTree.UniqueName}");
-                _logService.Info($"SceneTreeItems.Count={SceneTreeItems.Count}");
+                LogService.Info($"Updated scene tree: {sceneTree.UniqueName}");
+                LogService.Info($"SceneTreeItems.Count={SceneTreeItems.Count}");
             }, System.Windows.Threading.DispatcherPriority.Render);
         }
 
@@ -168,15 +137,16 @@ namespace DANCustomTools.ViewModels
                     var treeItem = CreateSceneTreeItem(sceneTree);
                     SceneTreeItems.Add(treeItem);
                 }
-                _logService.Info($"Updated offline scene trees: {sceneTrees.Count} scenes");
+                LogService.Info($"Updated offline scene trees: {sceneTrees.Count} scenes");
             });
         }
 
         private void OnObjectSelectedFromRuntime(object? sender, uint objectRef)
         {
-            _logService.Info($"Object selected from runtime: {objectRef}");
+            LogService.Info($"Object selected from runtime: {objectRef}");
             // Could highlight the object in tree if needed
         }
+
 
         private SceneTreeItemViewModel CreateSceneTreeItem(SceneTreeModel sceneTree)
         {
@@ -252,14 +222,14 @@ namespace DANCustomTools.ViewModels
         {
             if (selectedItem == null) return;
 
-            _logService.Info($"Tree item selected: {selectedItem.DisplayName} ({selectedItem.ItemType})");
+            LogService.Info($"Tree item selected: {selectedItem.DisplayName} ({selectedItem.ItemType})");
 
             switch (selectedItem.ItemType)
             {
                 case SceneTreeItemType.Scene:
                     if (selectedItem.Model is SceneTreeModel scene)
                     {
-                        _logService.Info($"Selected scene: {scene.UniqueName}");
+                        LogService.Info($"Selected scene: {scene.UniqueName}");
                         // Auto-focus scene in engine
                         _sceneService.SelectScene(scene.UniqueName);
                         // Clear properties when scene is selected
@@ -272,7 +242,7 @@ namespace DANCustomTools.ViewModels
                     if (selectedItem.Model is ActorModel actor)
                     {
                         SelectedObject = actor;
-                        _logService.Info($"Selected actor: {actor.FriendlyName}");
+                        LogService.Info($"Selected actor: {actor.FriendlyName}");
 
                         // Load properties for the selected actor
                         PropertiesEditor.ViewModel?.LoadObjectProperties(actor);
@@ -289,7 +259,7 @@ namespace DANCustomTools.ViewModels
                     if (selectedItem.Model is FriseModel frise)
                     {
                         SelectedObject = frise;
-                        _logService.Info($"Selected frise: {frise.FriendlyName}");
+                        LogService.Info($"Selected frise: {frise.FriendlyName}");
 
                         // Load properties for the selected frise
                         PropertiesEditor.ViewModel?.LoadObjectProperties(frise);
@@ -307,7 +277,7 @@ namespace DANCustomTools.ViewModels
                     // Group selected - clear properties
                     PropertiesEditor.ViewModel?.ClearProperties();
                     SelectedObject = null;
-                    _logService.Info($"Selected {selectedItem.ItemType} group");
+                    LogService.Info($"Selected {selectedItem.ItemType} group");
                     break;
             }
         }
@@ -320,16 +290,16 @@ namespace DANCustomTools.ViewModels
                 if (SelectedObject != null)
                 {
                     _sceneService.SelectObjects(new[] { SelectedObject });
-                    _logService.Info($"Selected object in engine: {SelectedObject.FriendlyName}");
+                    LogService.Info($"Selected object in engine: {SelectedObject.FriendlyName}");
                 }
                 else
                 {
-                    _logService.Info("No object selected to focus in engine");
+                    LogService.Info("No object selected to focus in engine");
                 }
             }
             catch (Exception ex)
             {
-                _logService.Error("Failed to select in engine", ex);
+                LogService.Error("Failed to select in engine", ex);
             }
             await Task.CompletedTask;
         }
@@ -341,16 +311,16 @@ namespace DANCustomTools.ViewModels
                 if (SelectedObject != null)
                 {
                     _sceneService.SelectObjects(new[] { SelectedObject });
-                    _logService.Info($"Selected highlighted object: {SelectedObject.FriendlyName}");
+                    LogService.Info($"Selected highlighted object: {SelectedObject.FriendlyName}");
                 }
                 else
                 {
-                    _logService.Info("No highlighted object to select");
+                    LogService.Info("No highlighted object to select");
                 }
             }
             catch (Exception ex)
             {
-                _logService.Error("Failed to select highlighted object", ex);
+                LogService.Error("Failed to select highlighted object", ex);
             }
             await Task.CompletedTask;
         }
@@ -362,7 +332,7 @@ namespace DANCustomTools.ViewModels
                 if (SelectedObject != null)
                 {
                     _sceneService.DeleteObject(SelectedObject.ObjectRef);
-                    _logService.Info($"Deleted object: {SelectedObject.FriendlyName}");
+                    LogService.Info($"Deleted object: {SelectedObject.FriendlyName}");
 
                     // Clear properties after deletion
                     PropertiesEditor.ViewModel?.ClearProperties();
@@ -370,12 +340,12 @@ namespace DANCustomTools.ViewModels
                 }
                 else
                 {
-                    _logService.Info("No object selected to delete");
+                    LogService.Info("No object selected to delete");
                 }
             }
             catch (Exception ex)
             {
-                _logService.Error("Failed to delete object", ex);
+                LogService.Error("Failed to delete object", ex);
             }
             await Task.CompletedTask;
         }
@@ -385,11 +355,11 @@ namespace DANCustomTools.ViewModels
             try
             {
                 _sceneService.RequestSceneTree();
-                _logService.Info("Requested scene tree refresh");
+                LogService.Info("Requested scene tree refresh");
             }
             catch (Exception ex)
             {
-                _logService.Error("Failed to refresh scene tree", ex);
+                LogService.Error("Failed to refresh scene tree", ex);
             }
             await Task.CompletedTask;
         }
@@ -409,11 +379,11 @@ namespace DANCustomTools.ViewModels
             {
                 // Duplicate at current position (0, 0, 0 offset)
                 _sceneService.DuplicateAndMoveObject(SelectedObject.ObjectRef, 0.0f, 0.0f, 0.0f);
-                _logService.Info($"Duplicated object '{SelectedObject.FriendlyName}' at current position");
+                LogService.Info($"Duplicated object '{SelectedObject.FriendlyName}' at current position");
             }
             catch (Exception ex)
             {
-                _logService.Error($"Failed to duplicate object '{SelectedObject?.FriendlyName}'", ex);
+                LogService.Error($"Failed to duplicate object '{SelectedObject?.FriendlyName}'", ex);
                 System.Windows.MessageBox.Show($"Failed to duplicate object: {ex.Message}", "Duplication Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
 
@@ -450,11 +420,11 @@ namespace DANCustomTools.ViewModels
                     SelectedObject = null;
                     PropertiesEditor.ViewModel?.ClearProperties();
 
-                    _logService.Info($"Deleted object '{objectToDelete.FriendlyName}'");
+                    LogService.Info($"Deleted object '{objectToDelete.FriendlyName}'");
                 }
                 catch (Exception ex)
                 {
-                    _logService.Error($"Failed to delete object '{SelectedObject?.FriendlyName}'", ex);
+                    LogService.Error($"Failed to delete object '{SelectedObject?.FriendlyName}'", ex);
                     System.Windows.MessageBox.Show($"Failed to delete object: {ex.Message}", "Deletion Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
             }
@@ -462,11 +432,19 @@ namespace DANCustomTools.ViewModels
             await Task.CompletedTask;
         }
 
+        protected override void SubscribeToConnectionEvents()
+        {
+            _sceneService.ConnectionStatusChanged += OnConnectionStatusChanged;
+        }
+
+        protected override void UnsubscribeFromConnectionEvents()
+        {
+            _sceneService.ConnectionStatusChanged -= OnConnectionStatusChanged;
+        }
 
         public override void Dispose()
         {
             // Unsubscribe from events
-            _sceneService.ConnectionStatusChanged -= OnConnectionStatusChanged;
             _sceneService.OnlineSceneTreeUpdated -= OnOnlineSceneTreeUpdated;
             _sceneService.OfflineSceneTreesUpdated -= OnOfflineSceneTreesUpdated;
             _sceneService.ObjectSelectedFromRuntime -= OnObjectSelectedFromRuntime;

@@ -85,22 +85,6 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
-        <!-- Header -->
-        <Border Grid.Row="0" Background="#f8f9fa" BorderBrush="#ddd" BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal" Margin="8,6">
-                <TextBlock Text="🔧" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding ObjectDisplayName}" FontWeight="Bold" Foreground="#495057" VerticalAlignment="Center"/>
-            </StackPanel>
-        </Border>
-
-        <!-- Action Bar (minimal) -->
-        <Border Grid.Row="1" Background="White" BorderBrush="#ddd" BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal" Margin="6,4">
-                <TextBlock Text="" FontSize="10" Foreground="#666" VerticalAlignment="Center" Margin="4,0"/>
-            </StackPanel>
-        </Border>
-
         <!-- Content -->
         <Border Grid.Row="2" Background="White" BorderBrush="#ddd" BorderThickness="1" Margin="4">
             <Grid>
@@ -132,19 +116,6 @@
                     </TabItem>
                 </TabControl>
             </Grid>
-        </Border>
-
-        <!-- Status Bar -->
-        <Border Grid.Row="3" Background="#e3e3e3" Height="20" BorderBrush="#ddd" BorderThickness="0,1,0,0">
-            <StackPanel Orientation="Horizontal" Margin="8,2">
-                <TextBlock Text="Properties Editor" FontSize="10" Foreground="#6c757d" VerticalAlignment="Center"/>
-                <Rectangle Fill="#ccc" Width="1" Height="12" Margin="8,0"/>
-                <TextBlock Text="{Binding CurrentProperty.ObjectRef, StringFormat='Object Ref: {0}'}"
-                          FontSize="10"
-                          Foreground="#6c757d"
-                          VerticalAlignment="Center"
-                          Visibility="{Binding HasData, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            </StackPanel>
         </Border>
     </Grid>
 </UserControl>
