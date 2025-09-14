@@ -10,6 +10,8 @@ namespace DANCustomTools.ViewModels
         private object? _model;
         private SceneTreeItemType _itemType;
         private ObservableCollection<SceneTreeItemViewModel> _children = new();
+        private bool _isSelected;
+        private bool _isExpanded;
 
         public string DisplayName
         {
@@ -33,6 +35,18 @@ namespace DANCustomTools.ViewModels
         {
             get => _children;
             set => SetProperty(ref _children, value);
+        }
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetProperty(ref _isSelected, value);
+        }
+
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set => SetProperty(ref _isExpanded, value);
         }
     }
 

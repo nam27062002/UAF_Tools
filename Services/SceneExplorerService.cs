@@ -87,12 +87,22 @@ namespace DANCustomTools.Services
             _offlineSceneTreePath = path;
         }
 
+        public void RequestCurrentSelection()
+        {
+            if (IsConnected && Plugin != null)
+            {
+                SendCurrentSelectionRequest();
+            }
+        }
+
 
 
         protected override void ProcessMessage(blobWrapper blob)
         {
             var command = "";
             blob.extract(ref command);
+
+            LogService.Info($"SceneExplorer received message: '{command}'");
 
             switch (command)
             {
@@ -104,6 +114,9 @@ namespace DANCustomTools.Services
                     break;
                 case "ObjectsSelectedInRuntime":
                     ProcessRuntimeSelection(blob);
+                    break;
+                default:
+                    LogService.Warning($"Unknown SceneExplorer command: '{command}'");
                     break;
             }
         }
@@ -150,6 +163,7 @@ namespace DANCustomTools.Services
             {
                 uint objectRef = 0;
                 blob.extract(ref objectRef);
+                LogService.Info($"Processing runtime selection for object ref: {objectRef}");
                 ObjectSelectedFromRuntime?.Invoke(this, objectRef);
             }
             catch (Exception ex)
@@ -329,6 +343,12 @@ namespace DANCustomTools.Services
         private void SendSceneTreeRequest()
         {
             SendMessage(blob => blob.push("SendSceneTree"));
+        }
+
+        private void SendCurrentSelectionRequest()
+        {
+            LogService.Info("Sending 'SendCurrentSelection' request to Engine");
+            SendMessage(blob => blob.push("SendCurrentSelection"));
         }
 
         private void SendOfflineSceneTreeRequest(string path)
