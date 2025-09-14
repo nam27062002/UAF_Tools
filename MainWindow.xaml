@@ -117,6 +117,13 @@
                                                     <Trigger Property="IsPressed" Value="True">
                                                         <Setter Property="Background" Value="{StaticResource GameEditorAccentBrush}"/>
                                                     </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Opacity" Value="0.6"/>
+                                                        <Setter Property="Cursor" Value="Arrow"/>
+                                                    </Trigger>
+                                                    <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource GameEditorPrimaryBrush}"/>
+                                                    </DataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Setter.Value>
@@ -126,17 +133,48 @@
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="GamepadVariant"
                                                          Width="20" Height="20"
-                                                         Foreground="{StaticResource GameEditorPrimaryBrush}"
-                                                         VerticalAlignment="Center"/>
+                                                         VerticalAlignment="Center">
+                                    <materialDesign:PackIcon.Style>
+                                        <Style TargetType="materialDesign:PackIcon">
+                                            <Setter Property="Foreground" Value="{StaticResource GameEditorPrimaryBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </materialDesign:PackIcon.Style>
+                                </materialDesign:PackIcon>
                                 <StackPanel Margin="12,0,0,0">
                                     <TextBlock Text="Editor"
                                                FontSize="14"
-                                               FontWeight="SemiBold"
-                                               Foreground="{StaticResource GameEditorTextBrush}"/>
+                                               FontWeight="SemiBold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource GameEditorTextBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                     <TextBlock Text="Scene and object editor"
                                                FontSize="11"
-                                               Foreground="{StaticResource GameEditorTextSecondaryBrush}"
-                                               Margin="0,2,0,0"/>
+                                               Margin="0,2,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource GameEditorTextSecondaryBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                        <Setter Property="Opacity" Value="0.9"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </StackPanel>
                             </StackPanel>
                         </Button>
@@ -167,6 +205,13 @@
                                                     <Trigger Property="IsPressed" Value="True">
                                                         <Setter Property="Background" Value="{StaticResource GameEditorAccentBrush}"/>
                                                     </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Opacity" Value="0.6"/>
+                                                        <Setter Property="Cursor" Value="Arrow"/>
+                                                    </Trigger>
+                                                    <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource GameEditorAccentBrush}"/>
+                                                    </DataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Setter.Value>
@@ -176,17 +221,48 @@
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="Cog"
                                                          Width="20" Height="20"
-                                                         Foreground="{StaticResource GameEditorAccentBrush}"
-                                                         VerticalAlignment="Center"/>
+                                                         VerticalAlignment="Center">
+                                    <materialDesign:PackIcon.Style>
+                                        <Style TargetType="materialDesign:PackIcon">
+                                            <Setter Property="Foreground" Value="{StaticResource GameEditorAccentBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </materialDesign:PackIcon.Style>
+                                </materialDesign:PackIcon>
                                 <StackPanel Margin="12,0,0,0">
                                     <TextBlock Text="Assets Cooker"
                                                FontSize="14"
-                                               FontWeight="SemiBold"
-                                               Foreground="{StaticResource GameEditorTextBrush}"/>
+                                               FontWeight="SemiBold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource GameEditorTextBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                     <TextBlock Text="Process and optimize assets"
                                                FontSize="11"
-                                               Foreground="{StaticResource GameEditorTextSecondaryBrush}"
-                                               Margin="0,2,0,0"/>
+                                               Margin="0,2,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource GameEditorTextSecondaryBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                        <Setter Property="Opacity" Value="0.9"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </StackPanel>
                             </StackPanel>
                         </Button>

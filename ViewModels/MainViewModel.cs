@@ -11,6 +11,7 @@ namespace DANCustomTools.ViewModels
     {
         private readonly IToolManager _toolManager;
         private ViewModelBase? _currentToolViewModel;
+        private string _currentToolName = "Editor";
 
         public ObservableCollection<IMainTool> MainTools { get; } = new();
 
@@ -24,14 +25,32 @@ namespace DANCustomTools.ViewModels
             }
         }
 
+        public string CurrentToolName
+        {
+            get => _currentToolName;
+            set
+            {
+                if (_currentToolName != value)
+                {
+                    _currentToolName = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(IsEditorActive));
+                    OnPropertyChanged(nameof(IsAssetsCookerActive));
+                }
+            }
+        }
+
+        public bool IsEditorActive => CurrentToolName == "Editor";
+        public bool IsAssetsCookerActive => CurrentToolName == "AssetsCooker";
+
         public ICommand SwitchToEditorCommand { get; }
         public ICommand SwitchToAssetsCookerCommand { get; }
 
         public MainViewModel(IToolManager toolManager)
         {
             _toolManager = toolManager ?? throw new ArgumentNullException(nameof(toolManager));
-            SwitchToEditorCommand = new RelayCommand(() => SwitchToMainTool("Editor"));
-            SwitchToAssetsCookerCommand = new RelayCommand(() => SwitchToMainTool("AssetsCooker"));
+            SwitchToEditorCommand = new RelayCommand(() => SwitchToMainTool("Editor"), () => !IsEditorActive);
+            SwitchToAssetsCookerCommand = new RelayCommand(() => SwitchToMainTool("AssetsCooker"), () => !IsAssetsCookerActive);
 
             // Subscribe to tool manager events
             _toolManager.CurrentMainToolChanged += OnCurrentMainToolChanged;
@@ -39,8 +58,11 @@ namespace DANCustomTools.ViewModels
             // Load available main tools
             LoadMainTools();
 
-            // Initialize with Editor tool
-            SwitchToMainTool("Editor");
+            // Initialize with Editor tool - defer to ensure UI is ready
+            System.Windows.Application.Current.Dispatcher.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Loaded,
+                new Action(() => SwitchToMainTool("Editor"))
+            );
         }
 
         private void LoadMainTools()
@@ -56,17 +78,41 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine($"[MainViewModel] Switching to tool: {toolName}");
+
+                // For initialization, allow switching even to the same tool
+                bool isInitialization = CurrentToolViewModel == null;
+
+                if (CurrentToolName == toolName && !isInitialization)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[MainViewModel] Tool {toolName} already active, ignoring");
+                    return; // Ignore if already active (except during initialization)
+                }
+
+                System.Diagnostics.Debug.WriteLine($"[MainViewModel] Calling ToolManager.SwitchToMainTool({toolName})");
                 _toolManager.SwitchToMainTool(toolName);
+                CurrentToolName = toolName;
+
+                System.Diagnostics.Debug.WriteLine($"[MainViewModel] CurrentToolName set to: {CurrentToolName}");
+                System.Diagnostics.Debug.WriteLine($"[MainViewModel] IsEditorActive: {IsEditorActive}, IsAssetsCookerActive: {IsAssetsCookerActive}");
+
+                // Refresh command states
+                (SwitchToEditorCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                (SwitchToAssetsCookerCommand as RelayCommand)?.RaiseCanExecuteChanged();
+
+                System.Diagnostics.Debug.WriteLine($"[MainViewModel] Command states refreshed");
             }
             catch (ArgumentException ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error switching to main tool: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[MainViewModel] Error switching to main tool: {ex.Message}");
             }
         }
 
         private void OnCurrentMainToolChanged(object? sender, IMainTool? mainTool)
         {
+            System.Diagnostics.Debug.WriteLine($"[MainViewModel] OnCurrentMainToolChanged - Tool: {mainTool?.Name ?? "null"}");
             CurrentToolViewModel = mainTool?.CreateMainViewModel();
+            System.Diagnostics.Debug.WriteLine($"[MainViewModel] CurrentToolViewModel created: {CurrentToolViewModel?.GetType().Name ?? "null"}");
         }
 
         public override void Dispose()
