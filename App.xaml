@@ -6,8 +6,79 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
-                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+                <!-- Material Design Theme -->
+                <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="Blue" SecondaryColor="Teal" />
+
+                <!-- Custom Resources -->
+                <ResourceDictionary>
+                    <!-- Custom Colors for Harmony -->
+                    <SolidColorBrush x:Key="GameEditorPrimaryBrush" Color="#1976D2"/>
+                    <SolidColorBrush x:Key="GameEditorAccentBrush" Color="#00ACC1"/>
+                    <SolidColorBrush x:Key="GameEditorSuccessBrush" Color="#388E3C"/>
+                    <SolidColorBrush x:Key="GameEditorWarningBrush" Color="#F57C00"/>
+                    <SolidColorBrush x:Key="GameEditorBackgroundBrush" Color="#FAFAFA"/>
+                    <SolidColorBrush x:Key="GameEditorSurfaceBrush" Color="#FFFFFF"/>
+                    <SolidColorBrush x:Key="GameEditorTextBrush" Color="#212121"/>
+                    <SolidColorBrush x:Key="GameEditorTextSecondaryBrush" Color="#757575"/>
+                    <SolidColorBrush x:Key="GameEditorBorderBrush" Color="#E0E0E0"/>
+
+                    <!-- Improved Custom Styles -->
+                    <Style x:Key="GameEditorCardStyle" TargetType="materialDesign:Card">
+                        <Setter Property="Background" Value="{StaticResource GameEditorSurfaceBrush}"/>
+                        <Setter Property="Margin" Value="8"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Effect">
+                            <Setter.Value>
+                                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.2" Color="#000000"/>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <Style x:Key="GameEditorButtonStyle" TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource GameEditorPrimaryBrush}"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Height" Value="36"/>
+                        <Setter Property="Padding" Value="16,8"/>
+                        <Setter Property="FontWeight" Value="Medium"/>
+                        <Setter Property="FontSize" Value="13"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Effect">
+                            <Setter.Value>
+                                <DropShadowEffect BlurRadius="4" ShadowDepth="1" Opacity="0.3" Color="#000000"/>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <Style x:Key="GameEditorToolButtonStyle" TargetType="Button">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="{StaticResource GameEditorTextSecondaryBrush}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Width" Value="36"/>
+                        <Setter Property="Height" Value="36"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}"
+                                            CornerRadius="18">
+                                        <ContentPresenter HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource GameEditorBorderBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource GameEditorAccentBrush}"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

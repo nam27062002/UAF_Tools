@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:converters="clr-namespace:DANCustomTools.Converters"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="800">
 
@@ -16,110 +17,240 @@
         <converters:TreeItemTextFallbackConverter x:Key="TreeItemTextFallbackConverter"/>
         <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
 
-        <!-- Modern Button Style -->
-        <Style x:Key="ModernButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#f8f9fa"/>
-            <Setter Property="BorderBrush" Value="#dee2e6"/>
+        <!-- Material Design TreeView Item Style -->
+        <Style x:Key="MaterialTreeViewItemStyle" TargetType="TreeViewItem">
+            <Setter Property="IsExpanded" Value="True"/>
+            <Setter Property="Padding" Value="4,2"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource MaterialDesignSelection}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource MaterialDesignDivider}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Search TextBox Style -->
+        <Style x:Key="SearchTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Margin" Value="12"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Background" Value="{StaticResource GameEditorSurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource GameEditorTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource GameEditorBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="12,4"/>
-            <Setter Property="Margin" Value="2"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Height" Value="26"/>
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="Button">
+                    <ControlTemplate TargetType="TextBox">
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="3">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                CornerRadius="6">
+                            <Grid>
+                                <TextBlock Text="🔍 Search scenes, actors, frises..."
+                                           Foreground="{StaticResource GameEditorTextSecondaryBrush}"
+                                           FontSize="13"
+                                           Margin="12,8"
+                                           VerticalAlignment="Center"
+                                           Visibility="{Binding Text, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static converters:StringToVisibilityConverter.Instance}}"/>
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                            Margin="12,8"
+                                            VerticalAlignment="Center"/>
+                            </Grid>
                         </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#e9ecef"/>
-                                <Setter Property="BorderBrush" Value="#adb5bd"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#dee2e6"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Background" Value="#f8f9fa"/>
-                                <Setter Property="Foreground" Value="#6c757d"/>
-                                <Setter Property="BorderBrush" Value="#e9ecef"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
     </UserControl.Resources>
 
-    <Grid Background="#f5f5f5" Focusable="True">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <materialDesign:Card Style="{StaticResource GameEditorCardStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <!-- Action Buttons -->
-        <Border Grid.Row="1" Background="White" BorderBrush="#ddd" BorderThickness="0,1">
-            <StackPanel Orientation="Horizontal" Margin="8,4"/>
-        </Border>
+            <!-- Header with Connection Status -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource GameEditorPrimaryBrush}"
+                    Padding="16,12">
+                <DockPanel>
+                    <materialDesign:PackIcon Kind="FileTree"
+                                             Width="22" Height="22"
+                                             VerticalAlignment="Center"
+                                             Foreground="White"
+                                             DockPanel.Dock="Left"/>
+                    <TextBlock Text="Scene Explorer"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               Margin="12,0,0,0"
+                               DockPanel.Dock="Left"/>
 
-        <!-- Main Content -->
-        <Grid Grid.Row="2" Margin="4">
-            <!-- Scene Tree View -->
-            <Border Background="White" BorderBrush="#ddd" BorderThickness="1" CornerRadius="4">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <Border Grid.Row="0" Background="#f8f9fa" BorderBrush="#ddd" BorderThickness="0,0,0,1">
-                        <TextBlock Text="Scene Tree" FontWeight="Bold" Margin="8,6" Foreground="#495057"/>
-                    </Border>
-
-                    <Grid Grid.Row="1">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Text="No data" Foreground="#999" Margin="8,4"
-                                   Visibility="{Binding SceneTreeItems.Count, Converter={StaticResource CountToVisibilityConverter}}"/>
-                        <TreeView Grid.Row="1"
-                                  Name="SceneTreeView"
-                                  ItemsSource="{Binding SceneTreeItems}"
-                                  Margin="4"
-                                  Background="Transparent"
-                                  BorderThickness="0"
-                                  VirtualizingStackPanel.IsVirtualizing="False"
-                                  ScrollViewer.CanContentScroll="False"
-                                  SelectedItemChanged="TreeView_SelectedItemChanged"
-                                  MouseRightButtonUp="TreeView_MouseRightButtonUp"
-                                  KeyDown="TreeView_KeyDown">
-                            <TreeView.ItemContainerStyle>
-                                <Style TargetType="TreeViewItem">
-                                    <Setter Property="IsExpanded" Value="True"/>
+                    <!-- Connection Status -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                DockPanel.Dock="Right">
+                        <Ellipse Width="8" Height="8"
+                                 Margin="0,0,6,0"
+                                 VerticalAlignment="Center">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{StaticResource GameEditorWarningBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                            <Setter Property="Fill" Value="{StaticResource GameEditorSuccessBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
                                 </Style>
-                            </TreeView.ItemContainerStyle>
-                            <TreeView.ItemTemplate>
-                                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                                    <StackPanel Orientation="Horizontal" Margin="2">
-                                        <Image Source="{Binding ItemType, Converter={StaticResource TreeItemIconConverter}}"
-                                               Width="16" Height="16" Margin="0,0,4,0"
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock Text="{Binding IsConnected, Converter={StaticResource BoolToOnlineStatusConverter}}"
+                                   FontSize="11"
+                                   FontWeight="Medium"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.9"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Search Box -->
+            <TextBox Grid.Row="1"
+                     Name="SearchTextBox"
+                     Style="{StaticResource SearchTextBoxStyle}"
+                     TextChanged="SearchTextBox_TextChanged"/>
+
+            <!-- Action Buttons -->
+            <WrapPanel Grid.Row="2"
+                       Orientation="Horizontal"
+                       Margin="8,0,8,8">
+                <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                        ToolTip="Refresh Scene Tree"
+                        Command="{Binding RefreshCommand}"
+                        Margin="4,2">
+                    <materialDesign:PackIcon Kind="Refresh" Width="20" Height="20"/>
+                </Button>
+
+                <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                        ToolTip="Expand All"
+                        Click="ExpandAllButton_Click"
+                        Margin="4,2">
+                    <materialDesign:PackIcon Kind="UnfoldMoreHorizontal" Width="20" Height="20"/>
+                </Button>
+
+                <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                        ToolTip="Collapse All"
+                        Click="CollapseAllButton_Click"
+                        Margin="4,2">
+                    <materialDesign:PackIcon Kind="UnfoldLessHorizontal" Width="20" Height="20"/>
+                </Button>
+
+                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,2"/>
+
+                <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                        ToolTip="Select in Engine"
+                        Command="{Binding SelectInEngineCommand}"
+                        IsEnabled="{Binding SelectedObject, Converter={x:Static converters:ObjectToBoolConverter.Instance}}"
+                        Margin="4,2">
+                    <materialDesign:PackIcon Kind="CursorDefaultClickOutline" Width="20" Height="20"/>
+                </Button>
+            </WrapPanel>
+
+            <!-- Main Tree View -->
+            <Border Grid.Row="3"
+                    Margin="8,0,8,8"
+                    Background="{DynamicResource MaterialDesignBackground}"
+                    CornerRadius="4">
+                <Grid>
+                    <!-- Empty State -->
+                    <StackPanel VerticalAlignment="Center"
+                                HorizontalAlignment="Center"
+                                Visibility="{Binding SceneTreeItems.Count, Converter={StaticResource CountToVisibilityConverter}}">
+                        <materialDesign:PackIcon Kind="FileTreeOutline"
+                                                 Width="64" Height="64"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                 HorizontalAlignment="Center"/>
+                        <TextBlock Text="No scene data available"
+                                   FontSize="16"
+                                   Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,4"/>
+                        <TextBlock Text="Connect to engine to load scene hierarchy"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Tree View -->
+                    <TreeView Name="SceneTreeView"
+                              ItemsSource="{Binding SceneTreeItems}"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              VirtualizingStackPanel.IsVirtualizing="False"
+                              ScrollViewer.CanContentScroll="False"
+                              SelectedItemChanged="TreeView_SelectedItemChanged"
+                              MouseRightButtonUp="TreeView_MouseRightButtonUp"
+                              KeyDown="TreeView_KeyDown"
+                              ItemContainerStyle="{StaticResource MaterialTreeViewItemStyle}">
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                <StackPanel Orientation="Horizontal"
+                                            Margin="4,2">
+                                    <!-- Original Item Icon -->
+                                    <Image Source="{Binding ItemType, Converter={StaticResource TreeItemIconConverter}}"
+                                           Width="16" Height="16" Margin="0,0,4,0"
+                                           VerticalAlignment="Center"
+                                           Stretch="Uniform"
+                                           RenderOptions.BitmapScalingMode="HighQuality"/>
+
+                                    <!-- Item Text -->
+                                    <TextBlock Text="{Binding DisplayName}"
                                                VerticalAlignment="Center"
-                                               Stretch="Uniform"
-                                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                                        <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" FontSize="11"/>
-                                    </StackPanel>
-                                </HierarchicalDataTemplate>
-                            </TreeView.ItemTemplate>
-                        </TreeView>
-                    </Grid>
+                                               FontSize="13"/>
+                                </StackPanel>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
                 </Grid>
             </Border>
-        </Grid>
 
-    </Grid>
+            <!-- Status Bar -->
+            <Border Grid.Row="4"
+                    Background="{StaticResource GameEditorBorderBrush}"
+                    Padding="16,8">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="ViewList"
+                                             Width="14" Height="14"
+                                             VerticalAlignment="Center"
+                                             Foreground="{StaticResource GameEditorTextSecondaryBrush}"/>
+                    <TextBlock Text="{Binding SceneTreeItems.Count, StringFormat='Scenes: {0}'}"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               Foreground="{StaticResource GameEditorTextSecondaryBrush}"
+                               Margin="6,0,20,0"
+                               VerticalAlignment="Center"/>
+                    <materialDesign:PackIcon Kind="CursorDefault"
+                                             Width="14" Height="14"
+                                             VerticalAlignment="Center"
+                                             Foreground="{StaticResource GameEditorTextSecondaryBrush}"/>
+                    <TextBlock Text="{Binding SelectedObject.FriendlyName, StringFormat='Selected: {0}', FallbackValue='No selection'}"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               Foreground="{StaticResource GameEditorTextSecondaryBrush}"
+                               Margin="6,0,0,0"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </materialDesign:Card>
 </UserControl>

@@ -5,8 +5,18 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:viewModels="clr-namespace:DANCustomTools.ViewModels"
              xmlns:views="clr-namespace:DANCustomTools.Views"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:converters="clr-namespace:DANCustomTools.Converters"
              mc:Ignorable="d"
-             d:DesignHeight="600" d:DesignWidth="900">
+             d:DesignHeight="600" d:DesignWidth="900"
+             Background="{StaticResource GameEditorBackgroundBrush}"
+             FontFamily="Segoe UI">
+
+    <UserControl.Resources>
+        <converters:BoolToOnlineStatusConverter x:Key="BoolToOnlineStatusConverter"/>
+        <converters:ObjectToBoolConverter x:Key="ObjectToBoolConverter"/>
+        <converters:ConnectionStatusColorConverter x:Key="ConnectionStatusColorConverter"/>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -14,75 +24,76 @@
         </Grid.RowDefinitions>
 
         <!-- Header/Title Bar -->
-        <Border Grid.Row="0" Background="#2D2D30" Padding="10,5">
-            <TextBlock Text="Game Editor"
-                       Foreground="White"
-                       FontSize="14"
-                       FontWeight="Bold"
-                       VerticalAlignment="Center"/>
+        <Border Grid.Row="0"
+                Background="{StaticResource GameEditorPrimaryBrush}"
+                Padding="20,16">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="6" ShadowDepth="2" Opacity="0.3" Color="#000000"/>
+            </Border.Effect>
+            <DockPanel>
+                <materialDesign:PackIcon Kind="GamepadVariant"
+                                         Width="32" Height="32"
+                                         VerticalAlignment="Center"
+                                         Foreground="White"
+                                         DockPanel.Dock="Left"/>
+                <TextBlock Text="Game Editor"
+                           FontSize="24"
+                           FontWeight="SemiBold"
+                           Foreground="White"
+                           VerticalAlignment="Center"
+                           Margin="16,0,0,0"
+                           DockPanel.Dock="Left"/>
+
+                <!-- Quick Actions -->
+                <StackPanel Orientation="Horizontal"
+                            DockPanel.Dock="Right"
+                            VerticalAlignment="Center">
+                    <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                            ToolTip="Settings"
+                            Margin="6,0">
+                        <materialDesign:PackIcon Kind="Settings" Width="18" Height="18" Foreground="White"/>
+                    </Button>
+                    <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                            ToolTip="Help"
+                            Margin="6,0">
+                        <materialDesign:PackIcon Kind="HelpCircleOutline" Width="18" Height="18" Foreground="White"/>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
         </Border>
 
         <!-- Split Layout: Scene Explorer (Left) | Properties Editor (Right) -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Margin="8">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*" MinWidth="300"/>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="1*" MinWidth="300"/>
+                <ColumnDefinition Width="1*" MinWidth="350"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="1*" MinWidth="350"/>
             </Grid.ColumnDefinitions>
 
             <!-- Left Panel: Scene Explorer -->
-            <Border Grid.Column="0" BorderBrush="#CCCCCC" BorderThickness="0,0,1,0">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+            <ContentControl Grid.Column="0"
+                            Content="{Binding SceneExplorerViewModel}"
+                            Margin="0,0,4,0">
+                <ContentControl.Resources>
+                    <DataTemplate DataType="{x:Type viewModels:SceneExplorerViewModel}">
+                        <views:SceneExplorerView DataContext="{Binding}"/>
+                    </DataTemplate>
+                </ContentControl.Resources>
+            </ContentControl>
 
-                    <!-- Scene Explorer Header -->
-                    <Border Grid.Row="0" Background="#F5F5F5" Padding="10,5" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1">
-                        <StackPanel Orientation="Horizontal">
-                            <Ellipse Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center">
-                                <Ellipse.Style>
-                                    <Style TargetType="Ellipse">
-                                        <Setter Property="Fill" Value="Red"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SceneExplorerViewModel.IsConnected}" Value="True">
-                                                <Setter Property="Fill" Value="LimeGreen"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Ellipse.Style>
-                            </Ellipse>
-                            <TextBlock Text="Scene Explorer"
-                                       FontWeight="Bold"
-                                       FontSize="12"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Scene Explorer Content -->
-                    <ContentControl Grid.Row="1"
-                                    Content="{Binding SceneExplorerViewModel}"
-                                    Margin="0">
-                        <ContentControl.Resources>
-                            <DataTemplate DataType="{x:Type viewModels:SceneExplorerViewModel}">
-                                <views:SceneExplorerView DataContext="{Binding}"/>
-                            </DataTemplate>
-                        </ContentControl.Resources>
-                    </ContentControl>
-                </Grid>
-            </Border>
-
-            <!-- Splitter -->
+            <!-- Material Design Splitter -->
             <GridSplitter Grid.Column="1"
-                          Width="5"
-                          Background="#CCCCCC"
+                          Width="8"
+                          Background="{DynamicResource MaterialDesignDivider}"
                           VerticalAlignment="Stretch"
                           HorizontalAlignment="Center"
-                          ResizeBehavior="PreviousAndNext"/>
+                          ResizeBehavior="PreviousAndNext"
+/>
 
             <!-- Right Panel: Properties Editor -->
-            <Border Grid.Column="2">
+            <materialDesign:Card Grid.Column="2"
+                                 Margin="4,0,0,0"
+                                 Style="{StaticResource GameEditorCardStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -90,31 +101,56 @@
                     </Grid.RowDefinitions>
 
                     <!-- Properties Editor Header -->
-                    <Border Grid.Row="0" Background="#F5F5F5" Padding="10,5" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1">
-                        <StackPanel Orientation="Horizontal">
-                            <Ellipse Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center">
-                                <Ellipse.Style>
-                                    <Style TargetType="Ellipse">
-                                        <Setter Property="Fill" Value="Red"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding PropertiesEditorViewModel.IsConnected}" Value="True">
-                                                <Setter Property="Fill" Value="LimeGreen"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Ellipse.Style>
-                            </Ellipse>
+                    <Border Grid.Row="0"
+                            Background="{StaticResource GameEditorAccentBrush}"
+                            Padding="16,12">
+                        <DockPanel>
+                            <materialDesign:PackIcon Kind="TuneVertical"
+                                                     Width="22" Height="22"
+                                                     VerticalAlignment="Center"
+                                                     Foreground="White"
+                                                     DockPanel.Dock="Left"/>
                             <TextBlock Text="Properties Editor"
-                                       FontWeight="Bold"
-                                       FontSize="12"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="White"
+                                       VerticalAlignment="Center"
+                                       Margin="12,0,0,0"
+                                       DockPanel.Dock="Left"/>
+
+                            <!-- Connection Status -->
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center"
+                                        DockPanel.Dock="Right">
+                                <Ellipse Width="8" Height="8"
+                                         Margin="0,0,6,0"
+                                         VerticalAlignment="Center">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="{StaticResource GameEditorWarningBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding PropertiesEditorViewModel.IsConnected}" Value="True">
+                                                    <Setter Property="Fill" Value="{StaticResource GameEditorSuccessBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock Text="{Binding PropertiesEditorViewModel.IsConnected, Converter={StaticResource BoolToOnlineStatusConverter}}"
+                                           FontSize="11"
+                                           FontWeight="Medium"
+                                           Foreground="White"
+                                           VerticalAlignment="Center"
+                                           Opacity="0.9"/>
+                            </StackPanel>
+                        </DockPanel>
                     </Border>
 
                     <!-- Properties Editor Content -->
                     <ContentControl Grid.Row="1"
                                     Content="{Binding PropertiesEditorViewModel}"
-                                    Margin="0">
+                                    Margin="16">
                         <ContentControl.Resources>
                             <DataTemplate DataType="{x:Type viewModels:PropertiesEditorViewModel}">
                                 <views:PropertiesEditorView DataContext="{Binding}"/>
@@ -122,7 +158,47 @@
                         </ContentControl.Resources>
                     </ContentControl>
                 </Grid>
-            </Border>
+            </materialDesign:Card>
+
+            <!-- Floating Action Button -->
+            <!-- Quick Action Buttons -->
+            <StackPanel Grid.Column="2"
+                        Orientation="Vertical"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,16,16">
+                <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                        ToolTip="Connect to Engine"
+                        Command="{Binding SceneExplorerViewModel.RefreshCommand}"
+                        Margin="2">
+                    <materialDesign:PackIcon Kind="Connection" Width="16" Height="16"/>
+                </Button>
+                <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                        ToolTip="Refresh All"
+                        Command="{Binding SceneExplorerViewModel.RefreshCommand}"
+                        Margin="2">
+                    <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16"/>
+                </Button>
+            </StackPanel>
         </Grid>
+
+        <!-- Loading Overlay -->
+        <Border Grid.RowSpan="2"
+                Background="{DynamicResource MaterialDesignPaper}"
+                Opacity="0.95"
+                Visibility="Collapsed"
+                x:Name="LoadingOverlay">
+            <StackPanel VerticalAlignment="Center"
+                        HorizontalAlignment="Center">
+                <ProgressBar Width="50" Height="50"
+                             IsIndeterminate="True"
+                             Value="0"/>
+                <TextBlock Text="Loading..."
+                           FontSize="16"
+                           Margin="0,16,0,0"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource MaterialDesignBody}"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>

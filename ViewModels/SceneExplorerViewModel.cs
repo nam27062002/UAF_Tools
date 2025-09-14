@@ -37,6 +37,10 @@ namespace DANCustomTools.ViewModels
         public ICommand DuplicateCommand { get; }
         public ICommand DeleteCommand { get; }
 
+        // Toolbar commands
+        public ICommand RefreshCommand { get; }
+        public ICommand SelectInEngineCommand { get; }
+
         public ObservableCollection<SceneTreeItemViewModel> SceneTreeItems
         {
             get => _sceneTreeItems;
@@ -70,6 +74,10 @@ namespace DANCustomTools.ViewModels
             // Initialize context menu commands
             DuplicateCommand = new AsyncRelayCommand(ExecuteDuplicateAsync, CanExecuteDuplicate);
             DeleteCommand = new AsyncRelayCommand(ExecuteDeleteAsync, CanExecuteDelete);
+
+            // Initialize toolbar commands
+            RefreshCommand = new AsyncRelayCommand(async () => await RefreshSceneTreeAsync(null));
+            SelectInEngineCommand = new AsyncRelayCommand(async () => await SelectInEngineAsync(null), () => SelectedObject != null);
 
             // Subscribe to service events
             _sceneService.OnlineSceneTreeUpdated += OnOnlineSceneTreeUpdated;
