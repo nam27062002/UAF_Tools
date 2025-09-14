@@ -59,7 +59,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Action Buttons -->
@@ -122,9 +121,5 @@
             </Border>
         </Grid>
 
-        <!-- Bottom Status -->
-        <Border Grid.Row="3" Background="#e3e3e3" Height="20" BorderBrush="#ddd" BorderThickness="0,1,0,0">
-            <TextBlock Text="Ready" Margin="8,2" FontSize="10" Foreground="#6c757d" VerticalAlignment="Center"/>
-        </Border>
     </Grid>
 </UserControl>

@@ -16,7 +16,6 @@ namespace DANCustomTools.ViewModels
         private readonly IPropertiesEditorService _propertiesService;
 
         private PropertyModel _currentProperty = new();
-        private string _connectionStatus = "Disconnected";
         private bool _hasData = false;
         private string _xmlDisplayText = string.Empty;
         private System.Collections.ObjectModel.ObservableCollection<SimplePropertyRow> _parsedProperties = new();
@@ -31,12 +30,6 @@ namespace DANCustomTools.ViewModels
         {
             get => _currentProperty;
             private set => SetProperty(ref _currentProperty, value);
-        }
-
-        public string ConnectionStatus
-        {
-            get => _connectionStatus;
-            private set => SetProperty(ref _connectionStatus, value);
         }
 
         public bool HasData
@@ -166,7 +159,6 @@ namespace DANCustomTools.ViewModels
         private void UpdateConnectionStatus()
         {
             IsConnected = _propertiesService.IsConnected;
-            ConnectionStatus = IsConnected ? "Connected" : "Disconnected";
         }
 
         private void ExecuteDumpToFile(object? parameter)
