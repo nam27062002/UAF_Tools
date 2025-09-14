@@ -18,6 +18,8 @@ namespace DANCustomTools
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            base.OnStartup(e);
+            
             _host = CreateHostBuilder(e.Args).Build();
             ServiceProvider = _host.Services;
 
@@ -28,8 +30,11 @@ namespace DANCustomTools
                 var logService = ServiceProvider.GetService<ILogService>();
                 logService?.Warning("Tool initializer was not properly initialized during DI setup");
             }
+            
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
 
-            base.OnStartup(e);
+            var mainWindow = new MainWindow();
+            mainWindow.Show();
         }
 
         private static IHostBuilder CreateHostBuilder(string[] args) =>
