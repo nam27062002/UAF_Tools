@@ -32,7 +32,34 @@ namespace DANCustomTools.Core.Services
             }
         }
 
+        public bool IsRunning => _cancellationTokenSource != null;
+
         protected pluginWrapper? Plugin => _plugin;
+
+        /// <summary>
+        /// Forces a connection attempt. Useful when the service is already running but needs to reconnect.
+        /// </summary>
+        public virtual void ForceConnectionAttempt()
+        {
+            if (!IsRunning)
+            {
+                LogService.Warning($"Cannot force connection for {PluginName} - service is not running");
+                return;
+            }
+
+            LogService.Info($"Forcing connection attempt for {PluginName}");
+
+            // Reset connection state to trigger a fresh connection attempt
+            lock (ConnectionLock)
+            {
+                if (_isConnected)
+                {
+                    EngineHost.Disconnect();
+                    _plugin = null;
+                    _isConnected = false;
+                }
+            }
+        }
 
         protected EnginePluginServiceBase(ILogService logService, IEngineHostService engineHost)
         {
@@ -43,7 +70,29 @@ namespace DANCustomTools.Core.Services
         public virtual async Task StartAsync(string[] arguments, CancellationToken cancellationToken = default)
         {
             if (_cancellationTokenSource != null)
-                throw new InvalidOperationException($"{PluginName} service is already started");
+            {
+                LogService.Info($"{PluginName} service is already started, ensuring proper initialization");
+
+                // Service is running, but ensure engine host is initialized with current arguments
+                try
+                {
+                    if (!EngineHost.IsInitialized)
+                    {
+                        LogService.Info($"Initializing engine host for already-running {PluginName} service");
+                        EngineHost.Initialize(arguments);
+                    }
+
+                    // Call service-specific initialization if needed
+                    await OnServiceInitializingAsync();
+                }
+                catch (Exception ex)
+                {
+                    LogService.Error($"Failed to reinitialize {PluginName} service", ex);
+                    throw;
+                }
+
+                return; // Already started, but now properly initialized
+            }
 
             _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -77,6 +126,8 @@ namespace DANCustomTools.Core.Services
             LogService.Info($"Stopping {PluginName} service");
 
             _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose();
+            _cancellationTokenSource = null; // Reset to allow restarting
 
             if (_isConnected)
             {

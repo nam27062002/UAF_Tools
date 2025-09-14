@@ -113,6 +113,41 @@ namespace DANCustomTools.ViewModels
                     _propertiesService.StartAsync(arguments)
                 );
                 LogService.Info("All services started successfully");
+
+                // If services were already running, force a connection attempt to ensure they connect
+                if (!_sceneService.IsConnected || !_propertiesService.IsConnected)
+                {
+                    LogService.Info("Services not connected, forcing connection attempts");
+                    _sceneService.ForceConnectionAttempt();
+                    _propertiesService.ForceConnectionAttempt();
+
+                    // Give a moment for connection to establish, then request scene tree
+                    _ = Task.Delay(1000).ContinueWith(_ =>
+                    {
+                        try
+                        {
+                            if (_sceneService.IsConnected)
+                            {
+                                LogService.Info("Auto-requesting scene tree after connection attempt");
+                                _sceneService.RequestSceneTree();
+                            }
+                            else
+                            {
+                                LogService.Warning("Scene service still not connected after force connection attempt");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            LogService.Error("Failed to auto-request scene tree", ex);
+                        }
+                    });
+                }
+                else
+                {
+                    // Services are already connected, request scene tree immediately
+                    LogService.Info("Services already connected, requesting scene tree");
+                    _sceneService.RequestSceneTree();
+                }
             }
             catch (Exception ex)
             {
@@ -457,7 +492,8 @@ namespace DANCustomTools.ViewModels
             _sceneService.OfflineSceneTreesUpdated -= OnOfflineSceneTreesUpdated;
             _sceneService.ObjectSelectedFromRuntime -= OnObjectSelectedFromRuntime;
 
-            // Services don't need explicit disposal in this context
+            // Don't stop singleton services here - they should remain running for the application lifetime
+            // The StartAsync method now handles the case where services are already running gracefully
 
             // Dispose PropertiesEditor
             PropertiesEditor?.ViewModel?.Dispose();

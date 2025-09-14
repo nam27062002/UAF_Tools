@@ -17,6 +17,7 @@ namespace DANCustomTools.Services
         bool IsConnected { get; }
         Task StartAsync(string[] arguments, CancellationToken cancellationToken = default);
         Task StopAsync(CancellationToken cancellationToken = default);
+        void ForceConnectionAttempt();
         
         void SelectScene(string uniqueScene);
         void SelectObjects(IEnumerable<ObjectWithRefModel> objects);

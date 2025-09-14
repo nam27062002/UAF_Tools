@@ -14,6 +14,7 @@ namespace DANCustomTools.Services
         
         Task StartAsync(string[] arguments, CancellationToken cancellationToken = default);
         Task StopAsync(CancellationToken cancellationToken = default);
+        void ForceConnectionAttempt();
         
         void RequestObjectProperties(uint objectRef);
         void SendPropertiesUpdate(uint objectRef, string xmlData);
