@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-DANCustomTools is a .NET 8.0 WPF application that provides custom tools for interacting with a game engine. The application follows MVVM architecture pattern with dependency injection using Microsoft.Extensions DI container.
+DANCustomTools is a .NET 8.0 WPF application that provides extensible tools for game development with the UbiArt Framework. The application uses a sophisticated MainTool/SubTool architecture pattern with MVVM, dependency injection, and a pluggable tool system.
 
 ## Build Commands
 
@@ -22,47 +22,95 @@ dotnet run
 dotnet clean
 ```
 
-## Project Architecture
+## Architecture Overview
 
-### Core Structure
-- **MVVM Pattern**: Custom MVVM framework implementation in `MVVM/` folder
-  - `ViewModelBase`, `ModelBase`, `ViewBase` as base classes
-  - `ObservableObject` for property change notifications
-  - `RelayCommand` and `AsyncRelayCommand` for command implementations
+### MainTool/SubTool System
+The application is built around a hierarchical tool system:
 
-### Dependency Injection Setup
-- Services are configured in `App.xaml.cs:ConfigureServices()`
-- Registration order: Services first (in dependency order), then ViewModels
-- ViewModels are resolved through the DI container in MainWindow
+- **MainTool**: Top-level tools that provide broad functionality (e.g., Editor, AssetsCooker)
+- **SubTool**: Specialized tools within a MainTool that work together (e.g., SceneExplorer, PropertiesEditor within Editor)
+- **Tool Manager**: Central orchestrator that manages tool lifecycle, switching, and communication
 
-### Key Components
+### Core Framework (`Core/`)
 
-**Services** (in dependency order):
-1. `ILogService` → `ConsoleLogService` - Logging functionality
-2. `IEngineHostService` → `EngineHostService` - Engine communication layer
-3. `ISceneExplorerService` → `SceneExplorerService` - Scene tree management
-4. `IPropertiesEditorService` → `PropertiesEditorService` - Property editing
+**Tool Abstractions**:
+- `IMainTool` / `MainToolBase` - Interface and base class for main tools
+- `ISubTool` / `SubToolBase` - Interface and base class for sub tools
+- `IToolManager` / `ToolManager` - Manages tool registration, initialization, and switching
+- `IToolContext` / `ToolContext` - Shared context for inter-tool communication
 
-**Main Features**:
-- **Scene Explorer**: Tree-based scene hierarchy viewer with models in `Models/SceneExplorer/`
-- **Properties Editor**: Dynamic property editing interface with models in `Models/PropertiesEditor/`
+**Tool Configuration**:
+- `IToolConfigurationService` - Handles tool registration and setup
+- `IToolInitializer` - Manages tool initialization lifecycle
+- All tools are registered in `ToolConfigurationService.ConfigureTools()`
 
-### External Dependencies
-- References three external DLLs from `../../bin/`:
-  - `engineWrapper.dll` - Engine communication wrapper
-  - `PluginCommon.dll` - Common plugin utilities
-  - `TechnoControls.dll` - Custom WPF controls
-- These DLLs are essential for engine integration functionality
+### Current Tools (`Tools/`)
 
-### Technology Stack
+**Editor MainTool** (`Tools/Editor/`):
+- **EditorMainTool**: Main container with split-pane layout
+- **SceneExplorerSubTool**: Left panel - scene hierarchy browser
+- **PropertiesEditorSubTool**: Right panel - object property editor
+- Layout: Scene Explorer (left) | Properties Editor (right) with resizable splitter
+
+**AssetsCooker MainTool** (`Tools/AssetsCooker/`):
+- **AssetsCookerMainTool**: Asset processing and cooking tool
+- Single-view tool with async cooking simulation, logging, and progress tracking
+
+### Dependency Injection Architecture
+
+**Configuration Structure** (`App.xaml.cs`):
+```
+1. ConfigureCoreServices() - Infrastructure (Log, Engine, Domain services)
+2. ConfigureToolFramework() - Tool system (ToolManager, ToolContext, Configuration)
+3. ConfigureViewModels() - UI layer ViewModels
+```
+
+**Service Registration Order**:
+1. `ILogService` → `ConsoleLogService`
+2. `IEngineHostService` → `EngineHostService`
+3. `ISceneExplorerService` → `SceneExplorerService`
+4. `IPropertiesEditorService` → `PropertiesEditorService`
+5. Tool Framework Services (`IToolManager`, `IToolContext`, etc.)
+6. ViewModels (registered as Transient)
+
+### MVVM Framework (`MVVM/`)
+- Custom MVVM implementation with base classes
+- `ViewModelBase` with INotifyPropertyChanged and disposal support
+- `RelayCommand` and `AsyncRelayCommand` for command binding
+- DataTemplates in `MainWindow.xaml` automatically resolve ViewModels to Views
+
+## Tool Development Patterns
+
+### Adding a New MainTool
+1. Create tool structure in `Tools/[ToolName]/`
+2. Implement `MainToolBase` in `[ToolName]MainTool.cs`
+3. Create ViewModel inheriting `ViewModelBase`
+4. Create XAML View with code-behind
+5. Register in `ToolConfigurationService.ConfigureTools()`
+6. Add ViewModel to DI in `App.xaml.cs:ConfigureViewModels()`
+7. Add DataTemplate to `MainWindow.xaml`
+8. Add navigation command to `MainViewModel`
+
+### Adding a SubTool
+1. Create in `Tools/[MainTool]/SubTools/[SubToolName]/`
+2. Implement `SubToolBase` with parent MainTool reference
+3. Register in parent MainTool's `Initialize()` method
+4. SubTools share the MainTool's UI space and communicate via `IToolContext`
+
+### Inter-Tool Communication
+- Use `IToolContext.ShareData()` / `GetSharedData<T>()` for data sharing
+- Subscribe to `IToolManager` events for tool switching notifications
+- SubTools within same MainTool can interact through shared context
+
+## External Dependencies
+- `engineWrapper.dll` - Engine communication wrapper (../../bin/)
+- `PluginCommon.dll` - Common plugin utilities (../../bin/)
+- `TechnoControls.dll` - Custom WPF controls (../../bin/)
+- These DLLs are required for engine integration and must be present at runtime
+
+## Technology Stack
 - .NET 8.0 with WPF and Windows Forms integration
+- Microsoft.Extensions.Hosting and DependencyInjection
 - CommunityToolkit.Mvvm for MVVM helpers
-- Microsoft.Extensions for DI and hosting
-- Custom converters for data binding in `Converters/`
-
-## Development Notes
-
-- The application targets x64 architecture specifically (`win-x64` runtime identifier)
-- Uses unsafe blocks for potential native interop with engine DLLs
-- Main view switching is handled through `MainViewModel.CurrentViewModel` property
-- Views are defined as XAML files in `Views/` with corresponding code-behind files
+- Targets x64 architecture with unsafe blocks enabled for native interop
+- to memorize
