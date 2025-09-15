@@ -17,7 +17,7 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </UserControl.Resources>
 
-    <materialDesign:Card Style="{StaticResource GameEditorCardStyle}" Margin="4">
+    <materialDesign:Card Style="{StaticResource GameEditorCardStyle}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

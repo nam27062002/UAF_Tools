@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:converters="clr-namespace:DANCustomTools.Converters"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:tc="clr-namespace:TechnoControls.XMLPropertyGrid;assembly=TechnoControls"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="400">
@@ -11,6 +12,9 @@
     <UserControl.Resources>
         <!-- Boolean to Visibility Converter -->
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        
+        <!-- Bool to Online Status Converter -->
+        <converters:BoolToOnlineStatusConverter x:Key="BoolToOnlineStatusConverter"/>
 
         <!-- Inverted Boolean to Visibility Converter -->
         <Style x:Key="InvertedVisibilityStyle" TargetType="FrameworkElement">
@@ -78,15 +82,63 @@
         <converters:IndentLevelToWidthConverter x:Key="IndentConverter"/>
     </UserControl.Resources>
 
-    <Grid Background="#f5f5f5">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <!-- Content -->
-        <Border Grid.Row="2" Background="White" BorderBrush="#ddd" BorderThickness="1" Margin="4">
+    <materialDesign:Card Style="{StaticResource GameEditorCardStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource GameEditorHeaderBrush}"
+                    Padding="16,12">
+                <DockPanel>
+                    <materialDesign:PackIcon Kind="TuneVertical"
+                                             Width="22" Height="22"
+                                             VerticalAlignment="Center"
+                                             Foreground="White"
+                                             DockPanel.Dock="Left"/>
+                    <TextBlock Text="Properties Editor"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               Margin="12,0,0,0"
+                               DockPanel.Dock="Left"/>
+
+                    <!-- Connection Status -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                DockPanel.Dock="Right">
+                        <Ellipse Width="8" Height="8"
+                                 Margin="0,0,6,0"
+                                 VerticalAlignment="Center">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{StaticResource GameEditorWarningBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                            <Setter Property="Fill" Value="{StaticResource GameEditorSuccessBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock Text="{Binding IsConnected, Converter={StaticResource BoolToOnlineStatusConverter}}"
+                                   FontSize="11"
+                                   FontWeight="Medium"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.9"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Content -->
+            <Border Grid.Row="1" Background="White" BorderBrush="#ddd" BorderThickness="1" Margin="4">
             <Grid>
                 <!-- Empty State -->
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
@@ -117,5 +169,6 @@
                 </TabControl>
             </Grid>
         </Border>
-    </Grid>
+        </Grid>
+    </materialDesign:Card>
 </UserControl>

@@ -61,13 +61,13 @@
                           HorizontalAlignment="Center"
                           ResizeBehavior="PreviousAndNext"/>
 
-            <!-- Center Panel: Actor Creator -->
+            <!-- Center Panel: Properties Editor -->
             <ContentControl Grid.Column="2"
-                            Content="{Binding ActorCreateViewModel}"
-                            Margin="4,0">
+                            Content="{Binding PropertiesEditorViewModel}"
+                            Margin="4,0,4,0">
                 <ContentControl.Resources>
-                    <DataTemplate DataType="{x:Type viewModels:ActorCreateViewModel}">
-                        <views:ActorCreateView DataContext="{Binding}"/>
+                    <DataTemplate DataType="{x:Type viewModels:PropertiesEditorViewModel}">
+                        <views:PropertiesEditorView DataContext="{Binding}"/>
                     </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>
@@ -80,75 +80,16 @@
                           HorizontalAlignment="Center"
                           ResizeBehavior="PreviousAndNext"/>
 
-            <!-- Right Panel: Properties Editor -->
-            <materialDesign:Card Grid.Column="4"
-                                 Margin="4,0,0,0"
-                                 Style="{StaticResource GameEditorCardStyle}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <!-- Properties Editor Header -->
-                    <Border Grid.Row="0"
-                            Background="{StaticResource GameEditorHeaderBrush}"
-                            Padding="16,12">
-                        <DockPanel>
-                            <materialDesign:PackIcon Kind="TuneVertical"
-                                                     Width="22" Height="22"
-                                                     VerticalAlignment="Center"
-                                                     Foreground="White"
-                                                     DockPanel.Dock="Left"/>
-                            <TextBlock Text="Properties Editor"
-                                       FontSize="16"
-                                       FontWeight="SemiBold"
-                                       Foreground="White"
-                                       VerticalAlignment="Center"
-                                       Margin="12,0,0,0"
-                                       DockPanel.Dock="Left"/>
-
-                            <!-- Connection Status -->
-                            <StackPanel Orientation="Horizontal"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Center"
-                                        DockPanel.Dock="Right">
-                                <Ellipse Width="8" Height="8"
-                                         Margin="0,0,6,0"
-                                         VerticalAlignment="Center">
-                                    <Ellipse.Style>
-                                        <Style TargetType="Ellipse">
-                                            <Setter Property="Fill" Value="{StaticResource GameEditorWarningBrush}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding PropertiesEditorViewModel.IsConnected}" Value="True">
-                                                    <Setter Property="Fill" Value="{StaticResource GameEditorSuccessBrush}"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Ellipse.Style>
-                                </Ellipse>
-                                <TextBlock Text="{Binding PropertiesEditorViewModel.IsConnected, Converter={StaticResource BoolToOnlineStatusConverter}}"
-                                           FontSize="11"
-                                           FontWeight="Medium"
-                                           Foreground="White"
-                                           VerticalAlignment="Center"
-                                           Opacity="0.9"/>
-                            </StackPanel>
-                        </DockPanel>
-                    </Border>
-
-                    <!-- Properties Editor Content -->
-                    <ContentControl Grid.Row="1"
-                                    Content="{Binding PropertiesEditorViewModel}"
-                                    Margin="16">
-                        <ContentControl.Resources>
-                            <DataTemplate DataType="{x:Type viewModels:PropertiesEditorViewModel}">
-                                <views:PropertiesEditorView DataContext="{Binding}"/>
-                            </DataTemplate>
-                        </ContentControl.Resources>
-                    </ContentControl>
-                </Grid>
-            </materialDesign:Card>
+            <!-- Right Panel: Actor Creator -->
+            <ContentControl Grid.Column="4"
+                            Content="{Binding ActorCreateViewModel}"
+                            Margin="4,0,0,0">
+                <ContentControl.Resources>
+                    <DataTemplate DataType="{x:Type viewModels:ActorCreateViewModel}">
+                        <views:ActorCreateView DataContext="{Binding}"/>
+                    </DataTemplate>
+                </ContentControl.Resources>
+            </ContentControl>
 
             <!-- Floating Action Button -->
             <!-- Quick Action Buttons -->
