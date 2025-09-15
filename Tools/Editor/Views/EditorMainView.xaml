@@ -24,7 +24,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header/Title Bar -->
-        <Border Grid.Row="0" Background="#2D2D30" Padding="10,5">
+        <Border Grid.Row="0" Background="#2D2D30" Padding="16,8">
             <TextBlock Text="Editor"
                        Foreground="White"
                        FontSize="16"
@@ -33,7 +33,7 @@
         </Border>
 
         <!-- Triple Split Layout: Scene Explorer (Left) | Actor Creator (Center) | Properties Editor (Right) -->
-        <Grid Grid.Row="1" Margin="8">
+        <Grid Grid.Row="1" Margin="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1*" MinWidth="300"/>
                 <ColumnDefinition Width="Auto"/>
@@ -45,7 +45,7 @@
             <!-- Left Panel: Scene Explorer -->
             <ContentControl Grid.Column="0"
                             Content="{Binding SceneExplorerViewModel}"
-                            Margin="0,0,4,0">
+                            Margin="0">
                 <ContentControl.Resources>
                     <DataTemplate DataType="{x:Type viewModels:SceneExplorerViewModel}">
                         <views:SceneExplorerView DataContext="{Binding}"/>
@@ -64,7 +64,7 @@
             <!-- Center Panel: Properties Editor -->
             <ContentControl Grid.Column="2"
                             Content="{Binding PropertiesEditorViewModel}"
-                            Margin="4,0,4,0">
+                            Margin="0">
                 <ContentControl.Resources>
                     <DataTemplate DataType="{x:Type viewModels:PropertiesEditorViewModel}">
                         <views:PropertiesEditorView DataContext="{Binding}"/>
@@ -83,7 +83,7 @@
             <!-- Right Panel: Actor Creator -->
             <ContentControl Grid.Column="4"
                             Content="{Binding ActorCreateViewModel}"
-                            Margin="4,0,0,0">
+                            Margin="0">
                 <ContentControl.Resources>
                     <DataTemplate DataType="{x:Type viewModels:ActorCreateViewModel}">
                         <views:ActorCreateView DataContext="{Binding}"/>

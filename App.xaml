@@ -29,7 +29,7 @@
                     <!-- Enhanced Custom Styles -->
                     <Style x:Key="GameEditorCardStyle" TargetType="materialDesign:Card">
                         <Setter Property="Background" Value="{StaticResource GameEditorSurfaceBrush}"/>
-                        <Setter Property="Margin" Value="8"/>
+                        <Setter Property="Margin" Value="0"/>
                         <Setter Property="Padding" Value="0"/>
                         <Setter Property="BorderBrush" Value="{StaticResource GameEditorBorderBrush}"/>
                         <Setter Property="BorderThickness" Value="1"/>
