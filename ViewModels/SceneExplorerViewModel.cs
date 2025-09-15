@@ -22,7 +22,6 @@ namespace DANCustomTools.ViewModels
         // Dependencies
         private readonly ISceneExplorerService _sceneService;
         private readonly IPropertiesEditorService _propertiesService;
-        private readonly IEngineHostService _engineHost;
 
         // Arguments
         private readonly string[] _arguments;
@@ -70,8 +69,7 @@ namespace DANCustomTools.ViewModels
         {
             _sceneService = sceneService ?? throw new ArgumentNullException(nameof(sceneService));
             _propertiesService = propertiesService ?? throw new ArgumentNullException(nameof(propertiesService));
-            _engineHost = engineHost ?? throw new ArgumentNullException(nameof(engineHost));
-            _arguments = new string[] { "--port", "12345" }; // Default arguments
+            _arguments = ["--port", "12345"]; // Default arguments
 
             // Initialize context menu commands
             DuplicateCommand = new AsyncRelayCommand(ExecuteDuplicateAsync, CanExecuteDuplicate);

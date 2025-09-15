@@ -71,6 +71,7 @@ namespace DANCustomTools
             // Tool Services
             services.AddSingleton<ISceneExplorerService, SceneExplorerService>();
             services.AddSingleton<IPropertiesEditorService, PropertiesEditorService>();
+            services.AddSingleton<IActorCreateService, ActorCreateService>();
         }
 
         private static void ConfigureToolFramework(IServiceCollection services)
