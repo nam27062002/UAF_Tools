@@ -33,6 +33,11 @@
             <views:SceneExplorerView DataContext="{Binding}"/>
         </DataTemplate>
 
+        <!-- DataTemplate for ActorCreateViewModel -->
+        <DataTemplate DataType="{x:Type viewModels:ActorCreateViewModel}">
+            <views:ActorCreateView DataContext="{Binding}"/>
+        </DataTemplate>
+
         <!-- DataTemplate for PropertiesEditorViewModel -->
         <DataTemplate DataType="{x:Type viewModels:PropertiesEditorViewModel}">
             <views:PropertiesEditorView DataContext="{Binding}"/>

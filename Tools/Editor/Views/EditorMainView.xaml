@@ -62,12 +62,14 @@
             </DockPanel>
         </Border>
 
-        <!-- Split Layout: Scene Explorer (Left) | Properties Editor (Right) -->
+        <!-- Triple Split Layout: Scene Explorer (Left) | Actor Creator (Center) | Properties Editor (Right) -->
         <Grid Grid.Row="1" Margin="8">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*" MinWidth="350"/>
+                <ColumnDefinition Width="1*" MinWidth="300"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="1*" MinWidth="350"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="1*" MinWidth="300"/>
             </Grid.ColumnDefinitions>
 
             <!-- Left Panel: Scene Explorer -->
@@ -81,17 +83,35 @@
                 </ContentControl.Resources>
             </ContentControl>
 
-            <!-- Material Design Splitter -->
+            <!-- First Splitter -->
             <GridSplitter Grid.Column="1"
                           Width="8"
                           Background="{DynamicResource MaterialDesignDivider}"
                           VerticalAlignment="Stretch"
                           HorizontalAlignment="Center"
-                          ResizeBehavior="PreviousAndNext"
-/>
+                          ResizeBehavior="PreviousAndNext"/>
+
+            <!-- Center Panel: Actor Creator -->
+            <ContentControl Grid.Column="2"
+                            Content="{Binding ActorCreateViewModel}"
+                            Margin="4,0">
+                <ContentControl.Resources>
+                    <DataTemplate DataType="{x:Type viewModels:ActorCreateViewModel}">
+                        <views:ActorCreateView DataContext="{Binding}"/>
+                    </DataTemplate>
+                </ContentControl.Resources>
+            </ContentControl>
+
+            <!-- Second Splitter -->
+            <GridSplitter Grid.Column="3"
+                          Width="8"
+                          Background="{DynamicResource MaterialDesignDivider}"
+                          VerticalAlignment="Stretch"
+                          HorizontalAlignment="Center"
+                          ResizeBehavior="PreviousAndNext"/>
 
             <!-- Right Panel: Properties Editor -->
-            <materialDesign:Card Grid.Column="2"
+            <materialDesign:Card Grid.Column="4"
                                  Margin="4,0,0,0"
                                  Style="{StaticResource GameEditorCardStyle}">
                 <Grid>
@@ -162,7 +182,7 @@
 
             <!-- Floating Action Button -->
             <!-- Quick Action Buttons -->
-            <StackPanel Grid.Column="2"
+            <StackPanel Grid.Column="4"
                         Orientation="Vertical"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Bottom"

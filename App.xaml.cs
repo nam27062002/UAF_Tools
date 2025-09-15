@@ -62,6 +62,7 @@ namespace DANCustomTools
             services.AddSingleton<ILogService, ConsoleLogService>();
             services.AddSingleton<IEngineHostService, EngineHostService>();
             services.AddSingleton<ISceneExplorerService, SceneExplorerService>();
+            services.AddSingleton<IActorCreateService, ActorCreateService>();
             services.AddSingleton<IPropertiesEditorService, PropertiesEditorService>();
         }
 
@@ -91,6 +92,7 @@ namespace DANCustomTools
             services.AddTransient<EditorMainViewModel>();
             services.AddTransient<AssetsCookerMainViewModel>();
             services.AddTransient<SceneExplorerViewModel>();
+            services.AddTransient<ActorCreateViewModel>();
             services.AddTransient<PropertiesEditorViewModel>();
         }
 

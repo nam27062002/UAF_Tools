@@ -3,6 +3,7 @@ using DANCustomTools.Core.Abstractions;
 using DANCustomTools.Services;
 using DANCustomTools.Tools.AssetsCooker;
 using DANCustomTools.Tools.Editor;
+using DANCustomTools.Tools.Editor.SubTools.ActorCreate;
 using DANCustomTools.Tools.Editor.SubTools.PropertiesEditor;
 using DANCustomTools.Tools.Editor.SubTools.SceneExplorer;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,11 +45,13 @@ namespace DANCustomTools.Core.Services
             // Create EditorMainTool
             var editorTool = new EditorMainTool(serviceProvider, toolContext);
 
-            // Create and register SubTools
+            // Create and register SubTools in order: Scene Explorer, Actor Creator, Properties Editor
             var sceneExplorerSubTool = new SceneExplorerSubTool(serviceProvider, toolContext, editorTool);
+            var actorCreateSubTool = new ActorCreateSubTool(serviceProvider, toolContext, editorTool);
             var propertiesEditorSubTool = new PropertiesEditorSubTool(serviceProvider, toolContext, editorTool);
 
             editorTool.RegisterSubTool(sceneExplorerSubTool);
+            editorTool.RegisterSubTool(actorCreateSubTool);
             editorTool.RegisterSubTool(propertiesEditorSubTool);
 
             // Register with ToolManager

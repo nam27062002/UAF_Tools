@@ -29,7 +29,7 @@
                     Background="{StaticResource GameEditorAccentBrush}"
                     Padding="16,12">
                 <DockPanel>
-                    <materialDesign:PackIcon Kind="AccountCircle"
+                    <materialDesign:PackIcon Kind="Account"
                                              Width="22" Height="22"
                                              VerticalAlignment="Center"
                                              Foreground="White"
@@ -77,35 +77,30 @@
 
                     <!-- Action Buttons -->
                     <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
-                        <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                                Background="{StaticResource GameEditorPrimaryBrush}"
+                        <Button Style="{StaticResource GameEditorToolButtonStyle}"
                                 Command="{Binding CreateNewActorCommand}"
-                                IsEnabled="{Binding IsLoading}"
-                                Margin="4"
-                                Padding="12,8">
+                                ToolTip="Create New Actor"
+                                Margin="4">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="Plus" Width="16" Height="16" Margin="0,0,8,0"/>
                                 <TextBlock Text="New Actor"/>
                             </StackPanel>
                         </Button>
 
-                        <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                                Background="{StaticResource GameEditorAccentBrush}"
+                        <Button Style="{StaticResource GameEditorToolButtonStyle}"
                                 Command="{Binding SaveActorCommand}"
-                                IsEnabled="{Binding IsLoading}"
-                                Margin="4"
-                                Padding="12,8">
+                                ToolTip="Save Actor"
+                                Margin="4">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="ContentSave" Width="16" Height="16" Margin="0,0,8,0"/>
+                                <materialDesign:PackIcon Kind="ContentSaveOutline" Width="16" Height="16" Margin="0,0,8,0"/>
                                 <TextBlock Text="Save"/>
                             </StackPanel>
                         </Button>
 
-                        <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                        <Button Style="{StaticResource GameEditorToolButtonStyle}"
                                 Command="{Binding RefreshCommand}"
-                                IsEnabled="{Binding IsLoading}"
-                                Margin="4"
-                                Padding="12,8">
+                                ToolTip="Refresh"
+                                Margin="4">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" Margin="0,0,8,0"/>
                                 <TextBlock Text="Refresh"/>
@@ -114,16 +109,15 @@
                     </WrapPanel>
 
                     <!-- Actor List -->
-                    <GroupBox Header="Actors" Style="{StaticResource MaterialDesignCardGroupBox}" Margin="0,0,0,16">
+                    <GroupBox Header="Actors" Margin="0,0,0,16">
                         <Grid>
                             <ListBox ItemsSource="{Binding ActorList}"
                                      SelectedItem="{Binding SelectedActor}"
-                                     Height="200"
-                                     IsEnabled="{Binding IsLoading}">
+                                     Height="200">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Margin="8,4">
-                                            <materialDesign:PackIcon Kind="AccountCircle"
+                                            <materialDesign:PackIcon Kind="Account"
                                                                      Width="16" Height="16"
                                                                      Margin="0,0,8,0"
                                                                      VerticalAlignment="Center"/>
@@ -133,7 +127,7 @@
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                                 <ListBox.ItemContainerStyle>
-                                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource MaterialDesignListBoxItem}">
+                                    <Style TargetType="ListBoxItem">
                                         <Setter Property="Padding" Value="4"/>
                                         <EventSetter Event="MouseDoubleClick" Handler="ActorItem_MouseDoubleClick"/>
                                     </Style>
@@ -153,13 +147,11 @@
                                         </Style.Triggers>
                                     </Style>
                                 </StackPanel.Style>
-                                <materialDesign:PackIcon Kind="EmoticonSadOutline"
+                                <materialDesign:PackIcon Kind="EmoticonSad"
                                                          Width="48" Height="48"
-                                                         Foreground="{DynamicResource MaterialDesignBodyLight}"
                                                          HorizontalAlignment="Center"/>
                                 <TextBlock Text="No actors found"
                                            FontSize="14"
-                                           Foreground="{DynamicResource MaterialDesignBodyLight}"
                                            HorizontalAlignment="Center"
                                            Margin="0,8,0,0"/>
                             </StackPanel>
@@ -167,14 +159,13 @@
                     </GroupBox>
 
                     <!-- Component List -->
-                    <GroupBox Header="Available Components" Style="{StaticResource MaterialDesignCardGroupBox}" Margin="0,0,0,16">
+                    <GroupBox Header="Available Components" Margin="0,0,0,16">
                         <ListBox ItemsSource="{Binding ComponentList}"
-                                 Height="150"
-                                 IsEnabled="{Binding IsLoading}">
+                                 Height="150">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" Margin="8,4">
-                                        <materialDesign:PackIcon Kind="Component"
+                                        <materialDesign:PackIcon Kind="Cog"
                                                                  Width="16" Height="16"
                                                                  Margin="0,0,8,0"
                                                                  VerticalAlignment="Center"/>
@@ -187,25 +178,23 @@
                     </GroupBox>
 
                     <!-- Actor Properties -->
-                    <GroupBox Header="Actor Properties" Style="{StaticResource MaterialDesignCardGroupBox}">
+                    <GroupBox Header="Actor Properties">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBox Grid.Row="0"
-                                     materialDesign:HintAssist.Hint="Actor Name"
-                                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                     IsEnabled="{Binding IsLoading}"
+                            <Label Grid.Row="0" Content="Actor Name:" Margin="0,0,0,4"/>
+                            <TextBox Grid.Row="1"
                                      Margin="0,0,0,8"/>
 
-                            <TextBox Grid.Row="1"
-                                     materialDesign:HintAssist.Hint="Description"
-                                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                            <Label Grid.Row="2" Content="Description:" Margin="0,0,0,4"/>
+                            <TextBox Grid.Row="3"
                                      AcceptsReturn="True"
-                                     MaxLines="3"
-                                     IsEnabled="{Binding IsLoading}"/>
+                                     Height="60"/>
                         </Grid>
                     </GroupBox>
 
