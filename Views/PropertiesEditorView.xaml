@@ -24,8 +24,8 @@
 
         <!-- Modern Button Style -->
         <Style x:Key="ModernButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#f8f9fa"/>
-            <Setter Property="BorderBrush" Value="#dee2e6"/>
+            <Setter Property="Background" Value="{StaticResource GameEditorSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource GameEditorBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="Margin" Value="2"/>
@@ -37,16 +37,16 @@
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="3">
+                                CornerRadius="4">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#e9ecef"/>
-                                <Setter Property="BorderBrush" Value="#adb5bd"/>
+                                <Setter Property="Background" Value="{StaticResource GameEditorHoverBrush}"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource GameEditorAccentBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#dee2e6"/>
+                                <Setter Property="Background" Value="{StaticResource GameEditorSelectedBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Background" Value="#f8f9fa"/>

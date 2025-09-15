@@ -27,7 +27,7 @@
 
             <!-- Header -->
             <Border Grid.Row="0"
-                    Background="{StaticResource GameEditorAccentBrush}"
+                    Background="{StaticResource GameEditorHeaderBrush}"
                     Padding="16,12">
                 <DockPanel>
                     <materialDesign:PackIcon Kind="Account"

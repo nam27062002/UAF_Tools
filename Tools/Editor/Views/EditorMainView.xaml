@@ -24,42 +24,12 @@
         </Grid.RowDefinitions>
 
         <!-- Header/Title Bar -->
-        <Border Grid.Row="0"
-                Background="{StaticResource GameEditorPrimaryBrush}"
-                Padding="20,16">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="6" ShadowDepth="2" Opacity="0.3" Color="#000000"/>
-            </Border.Effect>
-            <DockPanel>
-                <materialDesign:PackIcon Kind="GamepadVariant"
-                                         Width="32" Height="32"
-                                         VerticalAlignment="Center"
-                                         Foreground="White"
-                                         DockPanel.Dock="Left"/>
-                <TextBlock Text="Game Editor"
-                           FontSize="24"
-                           FontWeight="SemiBold"
-                           Foreground="White"
-                           VerticalAlignment="Center"
-                           Margin="16,0,0,0"
-                           DockPanel.Dock="Left"/>
-
-                <!-- Quick Actions -->
-                <StackPanel Orientation="Horizontal"
-                            DockPanel.Dock="Right"
-                            VerticalAlignment="Center">
-                    <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                            ToolTip="Settings"
-                            Margin="6,0">
-                        <materialDesign:PackIcon Kind="Settings" Width="18" Height="18" Foreground="White"/>
-                    </Button>
-                    <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                            ToolTip="Help"
-                            Margin="6,0">
-                        <materialDesign:PackIcon Kind="HelpCircleOutline" Width="18" Height="18" Foreground="White"/>
-                    </Button>
-                </StackPanel>
-            </DockPanel>
+        <Border Grid.Row="0" Background="#2D2D30" Padding="10,5">
+            <TextBlock Text="Editor"
+                       Foreground="White"
+                       FontSize="16"
+                       FontWeight="Bold"
+                       VerticalAlignment="Center"/>
         </Border>
 
         <!-- Triple Split Layout: Scene Explorer (Left) | Actor Creator (Center) | Properties Editor (Right) -->
@@ -122,7 +92,7 @@
 
                     <!-- Properties Editor Header -->
                     <Border Grid.Row="0"
-                            Background="{StaticResource GameEditorAccentBrush}"
+                            Background="{StaticResource GameEditorHeaderBrush}"
                             Padding="16,12">
                         <DockPanel>
                             <materialDesign:PackIcon Kind="TuneVertical"

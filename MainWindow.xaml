@@ -45,67 +45,61 @@
     </Window.Resources>
 
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <!-- Left Sidebar - Main Tools -->
-        <Border Grid.Column="0"
-                Background="{StaticResource GameEditorSurfaceBrush}"
-                BorderBrush="{StaticResource GameEditorBorderBrush}"
-                BorderThickness="0,0,1,0">
+        <!-- Header with Navigation -->
+        <Border Grid.Row="0"
+                Background="{StaticResource GameEditorHeaderBrush}"
+                Padding="20,8">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.1" Color="#000000"/>
             </Border.Effect>
 
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-                <!-- Header -->
-                <Border Grid.Row="0"
-                        Background="{StaticResource GameEditorPrimaryBrush}"
-                        Padding="20,16">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal"
-                                    Margin="0,0,0,8">
+                <!-- Logo and Title -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                             <materialDesign:PackIcon Kind="Tools"
-                                                     Width="24" Height="24"
+                                             Width="28" Height="28"
                                                      Foreground="White"
                                                      VerticalAlignment="Center"/>
+                    <StackPanel Margin="16,0,0,0">
                             <TextBlock Text="UAF Tools"
-                                       FontSize="18"
-                                       FontWeight="SemiBold"
+                                   FontSize="20"
+                                   FontWeight="Bold"
                                        Foreground="White"
-                                       VerticalAlignment="Center"
-                                       Margin="12,0,0,0"/>
-                        </StackPanel>
-                        <TextBlock Text="Main Tools"
-                                   FontSize="13"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="UbiArt Framework Development Tools"
+                                   FontSize="12"
                                    Foreground="White"
-                                   Opacity="0.8"/>
+                                   Opacity="0.8"
+                                   Margin="0,2,0,0"/>
                     </StackPanel>
-                </Border>
+                </StackPanel>
 
-                <!-- Tools List -->
-                <ScrollViewer Grid.Row="1"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Margin="12">
+                <!-- Main Tools Navigation -->
+                <StackPanel Grid.Column="1" 
+                            Orientation="Horizontal" 
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Margin="40,0,0,0">
+                    
                         <!-- Editor Tool -->
                         <Button Command="{Binding SwitchToEditorCommand}"
-                                Margin="0,0,0,8"
-                                HorizontalAlignment="Stretch"
-                                HorizontalContentAlignment="Left">
+                            Margin="0,0,16,0"
+                            Padding="16,8">
                             <Button.Style>
                                 <Style TargetType="Button">
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
-                                    <Setter Property="Padding" Value="16,12"/>
                                     <Setter Property="Cursor" Value="Hand"/>
                                     <Setter Property="Template">
                                         <Setter.Value>
@@ -117,18 +111,18 @@
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource GameEditorBorderBrush}"/>
+                                                    <Setter Property="Background" Value="#1AFFFFFF"/>
                                                     </Trigger>
                                                     <Trigger Property="IsPressed" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource GameEditorAccentBrush}"/>
+                                                    <Setter Property="Background" Value="#33FFFFFF"/>
                                                     </Trigger>
                                                     <Trigger Property="IsEnabled" Value="False">
                                                         <Setter Property="Opacity" Value="0.6"/>
                                                         <Setter Property="Cursor" Value="Arrow"/>
                                                     </Trigger>
-                                                    <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource GameEditorPrimaryBrush}"/>
-                                                    </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
+                                                    <Setter Property="Background" Value="#1AFFFFFF"/>
+                                                </DataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Setter.Value>
@@ -138,62 +132,30 @@
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="GamepadVariant"
                                                          Width="20" Height="20"
-                                                         VerticalAlignment="Center">
-                                    <materialDesign:PackIcon.Style>
-                                        <Style TargetType="materialDesign:PackIcon">
-                                            <Setter Property="Foreground" Value="{StaticResource GameEditorPrimaryBrush}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
-                                                    <Setter Property="Foreground" Value="White"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </materialDesign:PackIcon.Style>
-                                </materialDesign:PackIcon>
-                                <StackPanel Margin="12,0,0,0">
+                                                     Foreground="White"
+                                                     VerticalAlignment="Center"/>
+                            <StackPanel Margin="8,0,0,0">
                                     <TextBlock Text="Editor"
-                                               FontSize="14"
-                                               FontWeight="SemiBold">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{StaticResource GameEditorTextBrush}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
-                                                        <Setter Property="Foreground" Value="White"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="White"
+                                           VerticalAlignment="Center"/>
                                     <TextBlock Text="Scene and object editor"
-                                               FontSize="11"
-                                               Margin="0,2,0,0">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{StaticResource GameEditorTextSecondaryBrush}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
-                                                        <Setter Property="Foreground" Value="White"/>
-                                                        <Setter Property="Opacity" Value="0.9"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </StackPanel>
+                                           FontSize="10"
+                                           Foreground="White"
+                                           Opacity="0.8"
+                                           Margin="0,1,0,0"/>
+                            </StackPanel>
                             </StackPanel>
                         </Button>
 
                         <!-- Assets Cooker Tool -->
                         <Button Command="{Binding SwitchToAssetsCookerCommand}"
-                                Margin="0,0,0,8"
-                                HorizontalAlignment="Stretch"
-                                HorizontalContentAlignment="Left">
+                            Padding="16,8">
                             <Button.Style>
                                 <Style TargetType="Button">
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
-                                    <Setter Property="Padding" Value="16,12"/>
                                     <Setter Property="Cursor" Value="Hand"/>
                                     <Setter Property="Template">
                                         <Setter.Value>
@@ -205,18 +167,18 @@
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource GameEditorBorderBrush}"/>
+                                                    <Setter Property="Background" Value="#1AFFFFFF"/>
                                                     </Trigger>
                                                     <Trigger Property="IsPressed" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource GameEditorAccentBrush}"/>
+                                                    <Setter Property="Background" Value="#33FFFFFF"/>
                                                     </Trigger>
                                                     <Trigger Property="IsEnabled" Value="False">
                                                         <Setter Property="Opacity" Value="0.6"/>
                                                         <Setter Property="Cursor" Value="Arrow"/>
                                                     </Trigger>
-                                                    <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource GameEditorAccentBrush}"/>
-                                                    </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
+                                                    <Setter Property="Background" Value="#1AFFFFFF"/>
+                                                </DataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Setter.Value>
@@ -226,75 +188,45 @@
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="Cog"
                                                          Width="20" Height="20"
-                                                         VerticalAlignment="Center">
-                                    <materialDesign:PackIcon.Style>
-                                        <Style TargetType="materialDesign:PackIcon">
-                                            <Setter Property="Foreground" Value="{StaticResource GameEditorAccentBrush}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
-                                                    <Setter Property="Foreground" Value="White"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </materialDesign:PackIcon.Style>
-                                </materialDesign:PackIcon>
-                                <StackPanel Margin="12,0,0,0">
+                                                     Foreground="White"
+                                                     VerticalAlignment="Center"/>
+                            <StackPanel Margin="8,0,0,0">
                                     <TextBlock Text="Assets Cooker"
-                                               FontSize="14"
-                                               FontWeight="SemiBold">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{StaticResource GameEditorTextBrush}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
-                                                        <Setter Property="Foreground" Value="White"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="White"
+                                           VerticalAlignment="Center"/>
                                     <TextBlock Text="Process and optimize assets"
-                                               FontSize="11"
-                                               Margin="0,2,0,0">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{StaticResource GameEditorTextSecondaryBrush}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
-                                                        <Setter Property="Foreground" Value="White"/>
-                                                        <Setter Property="Opacity" Value="0.9"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </StackPanel>
+                                           FontSize="10"
+                                           Foreground="White"
+                                           Opacity="0.8"
+                                           Margin="0,1,0,0"/>
+                            </StackPanel>
                             </StackPanel>
                         </Button>
                     </StackPanel>
-                </ScrollViewer>
 
-                <!-- Footer -->
-                <Border Grid.Row="2"
-                        Background="{StaticResource GameEditorBorderBrush}"
-                        Padding="16,12">
-                    <StackPanel>
+                <!-- Version Info -->
+                <StackPanel Grid.Column="2" 
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Right">
                         <TextBlock Text="v1.0.0"
+                               FontSize="11"
+                               Foreground="White"
+                               Opacity="0.8"
+                               HorizontalAlignment="Right"/>
+                    <TextBlock Text="UbiArt Framework"
                                    FontSize="10"
-                                   Foreground="{StaticResource GameEditorTextSecondaryBrush}"
-                                   HorizontalAlignment="Center"/>
-                        <TextBlock Text="UbiArt Framework Tools"
-                                   FontSize="10"
-                                   Foreground="{StaticResource GameEditorTextSecondaryBrush}"
-                                   HorizontalAlignment="Center"
+                               Foreground="White"
+                               Opacity="0.6"
+                               HorizontalAlignment="Right"
                                    Margin="0,2,0,0"/>
                     </StackPanel>
-                </Border>
             </Grid>
         </Border>
 
         <!-- Main Content Area -->
-        <ContentControl Grid.Column="1"
+        <ContentControl Grid.Row="1"
                         Content="{Binding CurrentToolViewModel}"
                         Margin="0"/>
     </Grid>
