@@ -100,7 +100,6 @@ namespace DANCustomTools
             services.AddTransient<EditorMainViewModel>();
             services.AddTransient<AssetsCookerMainViewModel>();
             services.AddTransient<SceneExplorerViewModel>();
-            services.AddTransient<ActorCreateViewModel>();
             services.AddTransient<PropertiesEditorViewModel>();
         }
 

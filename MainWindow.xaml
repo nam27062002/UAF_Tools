@@ -33,11 +33,6 @@
             <views:SceneExplorerView DataContext="{Binding}"/>
         </DataTemplate>
 
-        <!-- DataTemplate for ActorCreateViewModel -->
-        <DataTemplate DataType="{x:Type viewModels:ActorCreateViewModel}">
-            <views:ActorCreateView DataContext="{Binding}"/>
-        </DataTemplate>
-
         <!-- DataTemplate for PropertiesEditorViewModel -->
         <DataTemplate DataType="{x:Type viewModels:PropertiesEditorViewModel}">
             <views:PropertiesEditorView DataContext="{Binding}"/>
@@ -86,12 +81,12 @@
                 </StackPanel>
 
                 <!-- Main Tools Navigation -->
-                <StackPanel Grid.Column="1" 
-                            Orientation="Horizontal" 
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Margin="40,0,0,0">
-                    
+
                         <!-- Editor Tool -->
                         <Button Command="{Binding SwitchToEditorCommand}"
                             Margin="0,0,16,0"
@@ -301,7 +296,7 @@
                     </StackPanel>
 
                 <!-- Version Info -->
-                <StackPanel Grid.Column="2" 
+                <StackPanel Grid.Column="2"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Right">
                         <TextBlock Text="v1.0.0"

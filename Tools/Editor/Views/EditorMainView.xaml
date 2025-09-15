@@ -80,17 +80,6 @@
                           HorizontalAlignment="Center"
                           ResizeBehavior="PreviousAndNext"/>
 
-            <!-- Right Panel: Actor Creator -->
-            <ContentControl Grid.Column="4"
-                            Content="{Binding ActorCreateViewModel}"
-                            Margin="0">
-                <ContentControl.Resources>
-                    <DataTemplate DataType="{x:Type viewModels:ActorCreateViewModel}">
-                        <views:ActorCreateView DataContext="{Binding}"/>
-                    </DataTemplate>
-                </ContentControl.Resources>
-            </ContentControl>
-
             <!-- Floating Action Button -->
             <!-- Quick Action Buttons -->
             <StackPanel Grid.Column="4"

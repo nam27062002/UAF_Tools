@@ -15,7 +15,6 @@ namespace DANCustomTools.Tools.Editor.ViewModels
         private readonly IServiceProvider _serviceProvider;
 
         public DANCustomTools.ViewModels.SceneExplorerViewModel? SceneExplorerViewModel { get; }
-        public DANCustomTools.ViewModels.ActorCreateViewModel? ActorCreateViewModel { get; }
         public DANCustomTools.ViewModels.PropertiesEditorViewModel? PropertiesEditorViewModel { get; }
 
         public EditorMainViewModel(IToolManager toolManager, IServiceProvider serviceProvider)
@@ -25,7 +24,6 @@ namespace DANCustomTools.Tools.Editor.ViewModels
 
             // Initialize all three SubTool ViewModels directly
             SceneExplorerViewModel = CreateSceneExplorerViewModel();
-            ActorCreateViewModel = CreateActorCreateViewModel();
             PropertiesEditorViewModel = CreatePropertiesEditorViewModel();
         }
 
@@ -39,20 +37,6 @@ namespace DANCustomTools.Tools.Editor.ViewModels
             {
                 // Log error but don't crash
                 System.Diagnostics.Debug.WriteLine($"Error creating SceneExplorerViewModel: {ex.Message}");
-                return null;
-            }
-        }
-
-        private DANCustomTools.ViewModels.ActorCreateViewModel? CreateActorCreateViewModel()
-        {
-            try
-            {
-                return _serviceProvider.GetService<DANCustomTools.ViewModels.ActorCreateViewModel>();
-            }
-            catch (Exception ex)
-            {
-                // Log error but don't crash
-                System.Diagnostics.Debug.WriteLine($"Error creating ActorCreateViewModel: {ex.Message}");
                 return null;
             }
         }
@@ -75,7 +59,6 @@ namespace DANCustomTools.Tools.Editor.ViewModels
         {
             // Dispose child ViewModels
             SceneExplorerViewModel?.Dispose();
-            ActorCreateViewModel?.Dispose();
             PropertiesEditorViewModel?.Dispose();
             base.Dispose();
         }
