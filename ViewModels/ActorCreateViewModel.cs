@@ -1,9 +1,11 @@
 #nullable enable
 using DANCustomTools.Core.ViewModels;
+using DANCustomTools.Models.ActorCreate;
 using DANCustomTools.MVVM;
 using DANCustomTools.Services;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -17,11 +19,13 @@ namespace DANCustomTools.ViewModels
         // UI Properties
         private string _statusMessage = "Ready";
         private bool _isLoading = false;
-        private string? _selectedActor;
+        private ActorInfo? _selectedActor;
+        private string _newActorName = string.Empty;
 
         // Collections
-        public ObservableCollection<string> ActorList { get; private set; } = new();
+        public ObservableCollection<ActorInfo> ActorList { get; private set; } = new();
         public ObservableCollection<string> ComponentList { get; private set; } = new();
+        public ObservableCollection<string> SelectedActorComponents { get; private set; } = new();
 
         // Commands
         public ICommand CreateNewActorCommand { get; }
@@ -38,7 +42,7 @@ namespace DANCustomTools.ViewModels
 
             // Initialize commands
             CreateNewActorCommand = new AsyncRelayCommand(CreateNewActorAsync);
-            LoadActorCommand = new AsyncRelayCommand<string>(LoadActorAsync);
+            LoadActorCommand = new AsyncRelayCommand<ActorInfo>(LoadActorAsync);
             SaveActorCommand = new AsyncRelayCommand(SaveActorAsync);
             RefreshCommand = new AsyncRelayCommand(RefreshAsync);
 
@@ -63,10 +67,22 @@ namespace DANCustomTools.ViewModels
             set => SetProperty(ref _isLoading, value);
         }
 
-        public string? SelectedActor
+        public ActorInfo? SelectedActor
         {
             get => _selectedActor;
-            set => SetProperty(ref _selectedActor, value);
+            set
+            {
+                if (SetProperty(ref _selectedActor, value))
+                {
+                    UpdateSelectedActorComponents();
+                }
+            }
+        }
+
+        public string NewActorName
+        {
+            get => _newActorName;
+            set => SetProperty(ref _newActorName, value);
         }
 
         #endregion
@@ -77,13 +93,27 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(NewActorName))
+                {
+                    StatusMessage = "Please enter a valid actor name";
+                    return;
+                }
+
                 IsLoading = true;
-                StatusMessage = "Creating new actor...";
+                StatusMessage = $"Creating new actor: {NewActorName}...";
 
-                // TODO: Implement actor creation logic
-                await Task.Delay(1000); // Placeholder
+                var success = await _actorCreateService.CreateActorAsync(NewActorName);
 
-                StatusMessage = "New actor created successfully";
+                if (success)
+                {
+                    StatusMessage = $"Actor '{NewActorName}' created successfully";
+                    NewActorName = string.Empty;
+                    await RefreshAsync();
+                }
+                else
+                {
+                    StatusMessage = $"Failed to create actor '{NewActorName}'";
+                }
             }
             catch (Exception ex)
             {
@@ -95,19 +125,26 @@ namespace DANCustomTools.ViewModels
             }
         }
 
-        private async Task LoadActorAsync(string? actorName)
+        private async Task LoadActorAsync(ActorInfo? actor)
         {
-            if (string.IsNullOrEmpty(actorName)) return;
+            if (actor == null) return;
 
             try
             {
                 IsLoading = true;
-                StatusMessage = $"Loading actor: {actorName}...";
+                StatusMessage = $"Loading actor: {actor.Name}...";
 
-                // TODO: Implement actor loading logic
-                await Task.Delay(500); // Placeholder
+                var success = await _actorCreateService.LoadActorAsync(actor.Name);
 
-                StatusMessage = $"Actor '{actorName}' loaded successfully";
+                if (success)
+                {
+                    SelectedActor = actor;
+                    StatusMessage = $"Actor '{actor.Name}' loaded successfully";
+                }
+                else
+                {
+                    StatusMessage = $"Failed to load actor '{actor.Name}'";
+                }
             }
             catch (Exception ex)
             {
@@ -123,13 +160,25 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
+                if (SelectedActor == null)
+                {
+                    StatusMessage = "No actor selected to save";
+                    return;
+                }
+
                 IsLoading = true;
-                StatusMessage = "Saving actor...";
+                StatusMessage = $"Saving actor: {SelectedActor.Name}...";
 
-                // TODO: Implement actor saving logic
-                await Task.Delay(800); // Placeholder
+                var success = await _actorCreateService.SaveActorAsync();
 
-                StatusMessage = "Actor saved successfully";
+                if (success)
+                {
+                    StatusMessage = $"Actor '{SelectedActor.Name}' saved successfully";
+                }
+                else
+                {
+                    StatusMessage = $"Failed to save actor '{SelectedActor.Name}'";
+                }
             }
             catch (Exception ex)
             {
@@ -192,6 +241,19 @@ namespace DANCustomTools.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"Initialization error: {ex.Message}";
+            }
+        }
+
+        private void UpdateSelectedActorComponents()
+        {
+            SelectedActorComponents.Clear();
+
+            if (SelectedActor != null)
+            {
+                foreach (var component in SelectedActor.ComponentList)
+                {
+                    SelectedActorComponents.Add(component);
+                }
             }
         }
 

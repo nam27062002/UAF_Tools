@@ -1,4 +1,5 @@
 #nullable enable
+using DANCustomTools.Models.ActorCreate;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -15,8 +16,21 @@ namespace DANCustomTools.Services
         /// <summary>
         /// Gets the current list of actors
         /// </summary>
+        /// <returns>Collection of ActorInfo objects</returns>
+        IEnumerable<ActorInfo> GetActors();
+
+        /// <summary>
+        /// Gets the current list of actor names (for simple UI binding)
+        /// </summary>
         /// <returns>Collection of actor names</returns>
-        IEnumerable<string> GetActors();
+        IEnumerable<string> GetActorNames();
+
+        /// <summary>
+        /// Gets a specific actor by name
+        /// </summary>
+        /// <param name="actorName">Name of the actor</param>
+        /// <returns>ActorInfo if found, null otherwise</returns>
+        ActorInfo? GetActor(string actorName);
 
         /// <summary>
         /// Gets the current list of available components

@@ -78,12 +78,13 @@
                     <!-- Action Buttons -->
                     <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
                         <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                                Command="{Binding CreateNewActorCommand}"
-                                ToolTip="Create New Actor"
+                                Command="{Binding LoadActorCommand}"
+                                CommandParameter="{Binding SelectedActor}"
+                                ToolTip="Load Selected Actor"
                                 Margin="4">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Plus" Width="16" Height="16" Margin="0,0,8,0"/>
-                                <TextBlock Text="New Actor"/>
+                                <materialDesign:PackIcon Kind="FolderOpen" Width="16" Height="16" Margin="0,0,8,0"/>
+                                <TextBlock Text="Load"/>
                             </StackPanel>
                         </Button>
 
@@ -108,6 +109,23 @@
                         </Button>
                     </WrapPanel>
 
+                    <!-- New Actor Creation -->
+                    <GroupBox Header="Create New Actor" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBox Text="{Binding NewActorName}"
+                                     materialDesign:HintAssist.Hint="Enter actor name"
+                                     Margin="0,0,0,8"/>
+                            <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                                    Command="{Binding CreateNewActorCommand}"
+                                    HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="Plus" Width="16" Height="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Create Actor"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </GroupBox>
+
                     <!-- Actor List -->
                     <GroupBox Header="Actors" Margin="0,0,0,16">
                         <Grid>
@@ -121,8 +139,14 @@
                                                                      Width="16" Height="16"
                                                                      Margin="0,0,8,0"
                                                                      VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding}"
-                                                       VerticalAlignment="Center"/>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding ComponentList.Count, StringFormat='Components: {0}'}"
+                                                           FontSize="11"
+                                                           Opacity="0.7"/>
+                                            </StackPanel>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
@@ -177,10 +201,33 @@
                         </ListBox>
                     </GroupBox>
 
+                    <!-- Selected Actor Components -->
+                    <GroupBox Header="Actor Components" Margin="0,0,0,16"
+                              Visibility="{Binding SelectedActor, Converter={StaticResource ObjectToBoolConverter}}">
+                        <ListBox ItemsSource="{Binding SelectedActorComponents}"
+                                 Height="150">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="8,4">
+                                        <materialDesign:PackIcon Kind="Cog"
+                                                                 Width="16" Height="16"
+                                                                 Margin="0,0,8,0"
+                                                                 VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding}"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </GroupBox>
+
                     <!-- Actor Properties -->
-                    <GroupBox Header="Actor Properties">
+                    <GroupBox Header="Actor Properties"
+                              Visibility="{Binding SelectedActor, Converter={StaticResource ObjectToBoolConverter}}">
                         <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
@@ -189,12 +236,20 @@
 
                             <Label Grid.Row="0" Content="Actor Name:" Margin="0,0,0,4"/>
                             <TextBox Grid.Row="1"
+                                     Text="{Binding SelectedActor.Name}"
+                                     IsReadOnly="True"
                                      Margin="0,0,0,8"/>
 
-                            <Label Grid.Row="2" Content="Description:" Margin="0,0,0,4"/>
+                            <Label Grid.Row="2" Content="Unique ID:" Margin="0,0,0,4"/>
                             <TextBox Grid.Row="3"
-                                     AcceptsReturn="True"
-                                     Height="60"/>
+                                     Text="{Binding SelectedActor.UnicId}"
+                                     IsReadOnly="True"
+                                     Margin="0,0,0,8"/>
+
+                            <Label Grid.Row="4" Content="Component Count:" Margin="0,0,0,4"/>
+                            <TextBox Grid.Row="5"
+                                     Text="{Binding SelectedActor.ComponentList.Count}"
+                                     IsReadOnly="True"/>
                         </Grid>
                     </GroupBox>
 

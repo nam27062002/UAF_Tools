@@ -1,5 +1,6 @@
 #nullable enable
 using DANCustomTools.Core.Abstractions;
+using DANCustomTools.Models.ActorCreate;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace DANCustomTools.Services
         private readonly IEngineHostService _engineHostService;
         private readonly ILogService? _logService;
 
-        private readonly List<string> _actors = new();
+        private readonly List<ActorInfo> _actors = new();
         private readonly List<string> _components = new();
         private bool _isConnected = false;
         private bool _disposed = false;
@@ -36,9 +37,19 @@ namespace DANCustomTools.Services
 
         #region Public Methods
 
-        public IEnumerable<string> GetActors()
+        public IEnumerable<ActorInfo> GetActors()
         {
             return _actors.ToList();
+        }
+
+        public IEnumerable<string> GetActorNames()
+        {
+            return _actors.Select(a => a.Name).ToList();
+        }
+
+        public ActorInfo? GetActor(string actorName)
+        {
+            return _actors.FirstOrDefault(a => a.Name.Equals(actorName, StringComparison.OrdinalIgnoreCase));
         }
 
         public IEnumerable<string> GetComponents()
@@ -99,9 +110,17 @@ namespace DANCustomTools.Services
                 await Task.Delay(500);
 
                 // Add to local collection
-                if (!_actors.Contains(actorName))
+                if (!_actors.Any(a => a.Name.Equals(actorName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    _actors.Add(actorName);
+                    var newActor = new ActorInfo
+                    {
+                        Name = actorName,
+                        UnicId = Guid.NewGuid().ToString(),
+                        Parameters = new ActorInfoParams()
+                    };
+                    newActor.Parameters.SetDefaultPaths(actorName);
+
+                    _actors.Add(newActor);
                     _logService?.Info($"Actor '{actorName}' created successfully");
                     return true;
                 }
@@ -240,7 +259,8 @@ namespace DANCustomTools.Services
         private void LoadMockData()
         {
             _actors.Clear();
-            _actors.AddRange(new[]
+
+            var mockActorNames = new[]
             {
                 "Player_Character",
                 "Enemy_Guard",
@@ -250,7 +270,47 @@ namespace DANCustomTools.Services
                 "Trigger_Door",
                 "Background_Tree",
                 "Effect_Particle"
-            });
+            };
+
+            foreach (var actorName in mockActorNames)
+            {
+                var actor = new ActorInfo
+                {
+                    Name = actorName,
+                    UnicId = Guid.NewGuid().ToString(),
+                    Parameters = new ActorInfoParams()
+                };
+
+                actor.Parameters.SetDefaultPaths(actorName);
+
+                // Add some mock components based on actor type
+                if (actorName.Contains("Player"))
+                {
+                    actor.ComponentList.Add("PlayerComponent");
+                    actor.ComponentList.Add("AnimatedComponent");
+                    actor.ComponentList.Add("PhysicsComponent");
+                }
+                else if (actorName.Contains("Enemy"))
+                {
+                    actor.ComponentList.Add("EnemyComponent");
+                    actor.ComponentList.Add("AnimatedComponent");
+                    actor.ComponentList.Add("PhysicsComponent");
+                }
+                else if (actorName.Contains("Light"))
+                {
+                    actor.ComponentList.Add("LightComponent");
+                }
+                else if (actorName.Contains("Sound"))
+                {
+                    actor.ComponentList.Add("SoundComponent");
+                }
+                else
+                {
+                    actor.ComponentList.Add("AnimatedComponent");
+                }
+
+                _actors.Add(actor);
+            }
         }
 
         private void ThrowIfDisposed()
