@@ -67,11 +67,12 @@ namespace DANCustomTools.Views
             if (DataContext is not SceneExplorerViewModel viewModel)
                 return;
 
+            var selectedItem = SceneTreeView.SelectedItem as SceneTreeItemViewModel;
+
             // Handle Delete key
             if (e.Key == Key.Delete)
             {
-                var selectedItem = SceneTreeView.SelectedItem as SceneTreeItemViewModel;
-                if (selectedItem?.ItemType == SceneTreeItemType.Actor || 
+                if (selectedItem?.ItemType == SceneTreeItemType.Actor ||
                     selectedItem?.ItemType == SceneTreeItemType.Frise)
                 {
                     if (viewModel.DeleteCommand.CanExecute(null))
@@ -79,6 +80,16 @@ namespace DANCustomTools.Views
                         viewModel.DeleteCommand.Execute(null);
                         e.Handled = true;
                     }
+                }
+            }
+            // Handle F2 key for rename
+            else if (e.Key == Key.F2)
+            {
+                if (selectedItem?.ItemType == SceneTreeItemType.Actor ||
+                    selectedItem?.ItemType == SceneTreeItemType.Frise)
+                {
+                    ShowRenameDialog(selectedItem, viewModel);
+                    e.Handled = true;
                 }
             }
         }
@@ -95,6 +106,19 @@ namespace DANCustomTools.Views
                 BorderBrush = System.Windows.Media.Brushes.LightGray,
                 BorderThickness = new Thickness(1)
             };
+
+            // Rename command (only for Actor and Frise)
+            if (selectedItem.ItemType == SceneTreeItemType.Actor || selectedItem.ItemType == SceneTreeItemType.Frise)
+            {
+                var renameMenuItem = new MenuItem
+                {
+                    Header = "Rename Object",
+                    Icon = new PackIcon { Kind = PackIconKind.Rename, Width = 16, Height = 16 }
+                };
+                renameMenuItem.Click += (s, e) => ShowRenameDialog(selectedItem, viewModel);
+                contextMenu.Items.Add(renameMenuItem);
+                contextMenu.Items.Add(new Separator());
+            }
 
             // Duplicate command
             var duplicateMenuItem = new MenuItem
@@ -120,6 +144,93 @@ namespace DANCustomTools.Views
             // Show context menu
             contextMenu.PlacementTarget = this;
             contextMenu.IsOpen = true;
+        }
+
+        private void ShowRenameDialog(SceneTreeItemViewModel selectedItem, SceneExplorerViewModel viewModel)
+        {
+            string currentName = selectedItem.DisplayName ?? "";
+
+            // Create a simple WPF input dialog using a message box alternative
+            var inputWindow = new Window
+            {
+                Title = "Rename Object",
+                Width = 400,
+                Height = 180, // Changed from 150 to 180
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = Window.GetWindow(this),
+                ResizeMode = ResizeMode.NoResize
+            };
+
+            var stackPanel = new System.Windows.Controls.StackPanel
+            {
+                Margin = new Thickness(20)
+            };
+
+            var label = new System.Windows.Controls.Label
+            {
+                Content = $"Enter new name for '{currentName}':",
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+
+            var textBox = new System.Windows.Controls.TextBox
+            {
+                Text = currentName,
+                Margin = new Thickness(0, 0, 0, 15)
+            };
+
+            var buttonPanel = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Right
+            };
+
+            var okButton = new System.Windows.Controls.Button
+            {
+                Content = "OK",
+                Width = 75,
+                Height = 25,
+                IsDefault = true,
+                Margin = new Thickness(0, 0, 10, 0)
+            };
+
+            var cancelButton = new System.Windows.Controls.Button
+            {
+                Content = "Cancel",
+                Width = 75,
+                Height = 25,
+                IsCancel = true
+            };
+
+            bool? dialogResult = null;
+            okButton.Click += (s, e) => { dialogResult = true; inputWindow.Close(); };
+            cancelButton.Click += (s, e) => { dialogResult = false; inputWindow.Close(); };
+
+            buttonPanel.Children.Add(okButton);
+            buttonPanel.Children.Add(cancelButton);
+
+            stackPanel.Children.Add(label);
+            stackPanel.Children.Add(textBox);
+            stackPanel.Children.Add(buttonPanel);
+
+            inputWindow.Content = stackPanel;
+            textBox.Focus();
+            textBox.SelectAll();
+
+            inputWindow.ShowDialog();
+
+            // If user clicked OK and entered a name
+            if (dialogResult == true)
+            {
+                string newName = textBox.Text?.Trim() ?? "";
+                if (!string.IsNullOrWhiteSpace(newName) && newName != currentName)
+                {
+                    // Execute rename command
+                    if (viewModel.RenameCommand.CanExecute(newName))
+                    {
+                        viewModel.RenameCommand.Execute(newName);
+                    }
+                }
+            }
         }
 
         #region Search Functionality

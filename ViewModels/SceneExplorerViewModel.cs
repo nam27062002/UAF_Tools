@@ -37,6 +37,7 @@ namespace DANCustomTools.ViewModels
         // Context menu commands
         public ICommand DuplicateCommand { get; }
         public ICommand DeleteCommand { get; }
+        public ICommand RenameCommand { get; }
 
         // Toolbar commands
         public ICommand RefreshCommand { get; }
@@ -75,6 +76,7 @@ namespace DANCustomTools.ViewModels
             // Initialize context menu commands
             DuplicateCommand = new AsyncRelayCommand(ExecuteDuplicateAsync, CanExecuteDuplicate);
             DeleteCommand = new AsyncRelayCommand(ExecuteDeleteAsync, CanExecuteDelete);
+            RenameCommand = new RelayCommand<string>(ExecuteRename, CanExecuteRename);
 
             // Initialize toolbar commands
             RefreshCommand = new AsyncRelayCommand(async () => await RefreshSceneTreeAsync(null));
@@ -698,6 +700,32 @@ namespace DANCustomTools.ViewModels
             }
 
             await Task.CompletedTask;
+        }
+
+        private bool CanExecuteRename(string? newName) =>
+            SelectedObject != null &&
+            SelectedObject.IsOnline &&
+            _sceneService.IsConnected;
+
+        private void ExecuteRename(string? newName)
+        {
+            if (!CanExecuteRename(newName) || SelectedObject == null || string.IsNullOrWhiteSpace(newName))
+                return;
+
+            try
+            {
+                var oldName = SelectedObject.FriendlyName;
+
+                // Execute rename through service
+                _sceneService.RenameObject(SelectedObject.ObjectRef, newName.Trim());
+
+                LogService.Info($"Renamed object from '{oldName}' to '{newName.Trim()}'");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error($"Failed to rename object '{SelectedObject?.FriendlyName}' to '{newName}'", ex);
+                System.Windows.MessageBox.Show($"Failed to rename object: {ex.Message}", "Rename Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
         }
 
         protected override void SubscribeToConnectionEvents()
