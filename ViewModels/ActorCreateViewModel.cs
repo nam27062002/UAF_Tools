@@ -16,6 +16,10 @@ namespace DANCustomTools.ViewModels
         // Dependencies
         private readonly IActorCreateService _actorCreateService;
 
+        // Child ViewModels
+        public ComponentListViewModel ComponentListViewModel { get; private set; }
+        public XmlPropertyGridViewModel XmlPropertyGridViewModel { get; private set; }
+
         // UI Properties
         private string _statusMessage = "Ready";
         private bool _isLoading = false;
@@ -40,14 +44,19 @@ namespace DANCustomTools.ViewModels
         {
             _actorCreateService = actorCreateService ?? throw new ArgumentNullException(nameof(actorCreateService));
 
+            // Initialize child ViewModels
+            ComponentListViewModel = new ComponentListViewModel();
+            XmlPropertyGridViewModel = new XmlPropertyGridViewModel();
+
             // Initialize commands
             CreateNewActorCommand = new AsyncRelayCommand(CreateNewActorAsync);
             LoadActorCommand = new AsyncRelayCommand<ActorInfo>(LoadActorAsync);
             SaveActorCommand = new AsyncRelayCommand(SaveActorAsync);
             RefreshCommand = new AsyncRelayCommand(RefreshAsync);
 
-            // Subscribe to connection events
+            // Subscribe to events
             SubscribeToConnectionEvents();
+            SubscribeToComponentEvents();
 
             // Initialize data
             Task.Run(InitializeAsync);
@@ -207,10 +216,14 @@ namespace DANCustomTools.ViewModels
                 }
 
                 ComponentList.Clear();
-                foreach (var component in _actorCreateService.GetComponents())
+                var components = _actorCreateService.GetComponents().ToList();
+                foreach (var component in components)
                 {
                     ComponentList.Add(component);
                 }
+
+                // Update ComponentListViewModel
+                ComponentListViewModel.LoadAvailableComponents(components);
 
                 IsConnected = _actorCreateService.IsConnected;
                 StatusMessage = $"Refreshed - Found {ActorList.Count} actors";
@@ -254,6 +267,55 @@ namespace DANCustomTools.ViewModels
                 {
                     SelectedActorComponents.Add(component);
                 }
+
+                // Update child ViewModels
+                ComponentListViewModel.LoadUsedComponents(SelectedActor.ComponentList);
+                // TODO: Load XML data for XmlPropertyGridViewModel
+            }
+        }
+
+        private void SubscribeToComponentEvents()
+        {
+            ComponentListViewModel.ComponentAdded += OnComponentAdded;
+            ComponentListViewModel.ComponentRemoved += OnComponentRemoved;
+            ComponentListViewModel.ComponentMoved += OnComponentMoved;
+        }
+
+        private void UnsubscribeFromComponentEvents()
+        {
+            ComponentListViewModel.ComponentAdded -= OnComponentAdded;
+            ComponentListViewModel.ComponentRemoved -= OnComponentRemoved;
+            ComponentListViewModel.ComponentMoved -= OnComponentMoved;
+        }
+
+        private void OnComponentAdded(object? sender, ComponentItem component)
+        {
+            if (SelectedActor != null && !SelectedActor.ComponentList.Contains(component.Name))
+            {
+                SelectedActor.ComponentList.Add(component.Name);
+                UpdateSelectedActorComponents();
+            }
+        }
+
+        private void OnComponentRemoved(object? sender, ComponentItem component)
+        {
+            if (SelectedActor != null)
+            {
+                SelectedActor.ComponentList.Remove(component.Name);
+                UpdateSelectedActorComponents();
+            }
+        }
+
+        private void OnComponentMoved(object? sender, ComponentMoveEventArgs e)
+        {
+            if (SelectedActor != null)
+            {
+                var componentName = e.Component.Name;
+                if (SelectedActor.ComponentList.Remove(componentName))
+                {
+                    var newIndex = Math.Min(e.NewIndex, SelectedActor.ComponentList.Count);
+                    SelectedActor.ComponentList.Insert(newIndex, componentName);
+                }
             }
         }
 
@@ -271,6 +333,7 @@ namespace DANCustomTools.ViewModels
         {
             // Unsubscribe from connection events
             // No specific events to unsubscribe from in current implementation
+            UnsubscribeFromComponentEvents();
         }
 
         #endregion
@@ -280,6 +343,9 @@ namespace DANCustomTools.ViewModels
         public override void Dispose()
         {
             // Cleanup resources
+            UnsubscribeFromComponentEvents();
+            ComponentListViewModel?.Dispose();
+            XmlPropertyGridViewModel?.Dispose();
             _actorCreateService?.Dispose();
             base.Dispose();
         }

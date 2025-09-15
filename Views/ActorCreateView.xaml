@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:DANCustomTools.Converters"
+             xmlns:controls="clr-namespace:DANCustomTools.Controls"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="400"
              Background="{StaticResource GameEditorBackgroundBrush}"
@@ -71,190 +72,140 @@
                 </DockPanel>
             </Border>
 
-            <!-- Main Content -->
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="16">
-                <StackPanel>
+            <!-- Main Content - Split Layout -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*" MinWidth="300"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="1.5*" MinWidth="400"/>
+                </Grid.ColumnDefinitions>
 
-                    <!-- Action Buttons -->
-                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
-                        <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                                Command="{Binding LoadActorCommand}"
-                                CommandParameter="{Binding SelectedActor}"
-                                ToolTip="Load Selected Actor"
-                                Margin="4">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="FolderOpen" Width="16" Height="16" Margin="0,0,8,0"/>
-                                <TextBlock Text="Load"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                                Command="{Binding SaveActorCommand}"
-                                ToolTip="Save Actor"
-                                Margin="4">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="ContentSaveOutline" Width="16" Height="16" Margin="0,0,8,0"/>
-                                <TextBlock Text="Save"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                                Command="{Binding RefreshCommand}"
-                                ToolTip="Refresh"
-                                Margin="4">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" Margin="0,0,8,0"/>
-                                <TextBlock Text="Refresh"/>
-                            </StackPanel>
-                        </Button>
-                    </WrapPanel>
-
-                    <!-- New Actor Creation -->
-                    <GroupBox Header="Create New Actor" Margin="0,0,0,16">
-                        <StackPanel>
-                            <TextBox Text="{Binding NewActorName}"
-                                     materialDesign:HintAssist.Hint="Enter actor name"
-                                     Margin="0,0,0,8"/>
+                <!-- Left Panel - Actor Management -->
+                <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="8,8,4,8">
+                    <StackPanel>
+                        <!-- Action Buttons -->
+                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
                             <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                                    Command="{Binding CreateNewActorCommand}"
-                                    HorizontalAlignment="Left">
+                                    Command="{Binding LoadActorCommand}"
+                                    CommandParameter="{Binding SelectedActor}"
+                                    ToolTip="Load Selected Actor"
+                                    Margin="2">
                                 <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="Plus" Width="16" Height="16" Margin="0,0,8,0"/>
-                                    <TextBlock Text="Create Actor"/>
+                                    <materialDesign:PackIcon Kind="FolderOpen" Width="14" Height="14" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Load" FontSize="11"/>
                                 </StackPanel>
                             </Button>
-                        </StackPanel>
-                    </GroupBox>
 
-                    <!-- Actor List -->
-                    <GroupBox Header="Actors" Margin="0,0,0,16">
-                        <Grid>
-                            <ListBox ItemsSource="{Binding ActorList}"
-                                     SelectedItem="{Binding SelectedActor}"
-                                     Height="200">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Margin="8,4">
-                                            <materialDesign:PackIcon Kind="Account"
-                                                                     Width="16" Height="16"
-                                                                     Margin="0,0,8,0"
-                                                                     VerticalAlignment="Center"/>
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding Name}"
-                                                           FontWeight="SemiBold"
-                                                           VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding ComponentList.Count, StringFormat='Components: {0}'}"
-                                                           FontSize="11"
-                                                           Opacity="0.7"/>
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                                <ListBox.ItemContainerStyle>
-                                    <Style TargetType="ListBoxItem">
-                                        <Setter Property="Padding" Value="4"/>
-                                        <EventSetter Event="MouseDoubleClick" Handler="ActorItem_MouseDoubleClick"/>
-                                    </Style>
-                                </ListBox.ItemContainerStyle>
-                            </ListBox>
+                            <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                                    Command="{Binding SaveActorCommand}"
+                                    ToolTip="Save Actor"
+                                    Margin="2">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="ContentSaveOutline" Width="14" Height="14" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Save" FontSize="11"/>
+                                </StackPanel>
+                            </Button>
 
-                            <!-- Empty State -->
-                            <StackPanel VerticalAlignment="Center"
-                                        HorizontalAlignment="Center">
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding ActorList.Count}" Value="0">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-                                <materialDesign:PackIcon Kind="EmoticonSad"
-                                                         Width="48" Height="48"
-                                                         HorizontalAlignment="Center"/>
-                                <TextBlock Text="No actors found"
-                                           FontSize="14"
-                                           HorizontalAlignment="Center"
-                                           Margin="0,8,0,0"/>
+                            <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                                    Command="{Binding RefreshCommand}"
+                                    ToolTip="Refresh"
+                                    Margin="2">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="Refresh" Width="14" Height="14" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Refresh" FontSize="11"/>
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+
+                        <!-- New Actor Creation -->
+                        <GroupBox Header="Create New Actor" Margin="0,0,0,16" FontSize="12">
+                            <StackPanel>
+                                <TextBox Text="{Binding NewActorName}"
+                                         materialDesign:HintAssist.Hint="Enter actor name"
+                                         FontSize="11"
+                                         Margin="0,0,0,8"/>
+                                <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                                        Command="{Binding CreateNewActorCommand}"
+                                        HorizontalAlignment="Left">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="Plus" Width="14" Height="14" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Create Actor" FontSize="11"/>
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
-                        </Grid>
-                    </GroupBox>
+                        </GroupBox>
 
-                    <!-- Component List -->
-                    <GroupBox Header="Available Components" Margin="0,0,0,16">
-                        <ListBox ItemsSource="{Binding ComponentList}"
-                                 Height="150">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Margin="8,4">
-                                        <materialDesign:PackIcon Kind="Cog"
-                                                                 Width="16" Height="16"
-                                                                 Margin="0,0,8,0"
-                                                                 VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding}"
-                                                   VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </GroupBox>
+                        <!-- Actor List -->
+                        <GroupBox Header="Actors" FontSize="12">
+                            <Grid>
+                                <ListBox ItemsSource="{Binding ActorList}"
+                                         SelectedItem="{Binding SelectedActor}"
+                                         Height="200">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="6,3">
+                                                <materialDesign:PackIcon Kind="Account"
+                                                                         Width="14" Height="14"
+                                                                         Margin="0,0,8,0"
+                                                                         VerticalAlignment="Center"/>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Name}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="11"/>
+                                                    <TextBlock Text="{Binding ComponentList.Count, StringFormat='Components: {0}'}"
+                                                               FontSize="10"
+                                                               Opacity="0.7"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                    <ListBox.ItemContainerStyle>
+                                        <Style TargetType="ListBoxItem">
+                                            <Setter Property="Padding" Value="4"/>
+                                            <EventSetter Event="MouseDoubleClick" Handler="ActorItem_MouseDoubleClick"/>
+                                        </Style>
+                                    </ListBox.ItemContainerStyle>
+                                </ListBox>
 
-                    <!-- Selected Actor Components -->
-                    <GroupBox Header="Actor Components" Margin="0,0,0,16"
-                              Visibility="{Binding SelectedActor, Converter={StaticResource ObjectToBoolConverter}}">
-                        <ListBox ItemsSource="{Binding SelectedActorComponents}"
-                                 Height="150">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Margin="8,4">
-                                        <materialDesign:PackIcon Kind="Cog"
-                                                                 Width="16" Height="16"
-                                                                 Margin="0,0,8,0"
-                                                                 VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding}"
-                                                   VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </GroupBox>
+                                <!-- Empty State -->
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ActorList.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+                                    <materialDesign:PackIcon Kind="EmoticonSad" Width="32" Height="32"/>
+                                    <TextBlock Text="No actors found" FontSize="12" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
 
-                    <!-- Actor Properties -->
-                    <GroupBox Header="Actor Properties"
-                              Visibility="{Binding SelectedActor, Converter={StaticResource ObjectToBoolConverter}}">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                <!-- Splitter -->
+                <GridSplitter Grid.Column="1"
+                              Width="4"
+                              Background="{StaticResource GameEditorAccentBrush}"
+                              VerticalAlignment="Stretch"
+                              ResizeDirection="Columns"/>
 
-                            <Label Grid.Row="0" Content="Actor Name:" Margin="0,0,0,4"/>
-                            <TextBox Grid.Row="1"
-                                     Text="{Binding SelectedActor.Name}"
-                                     IsReadOnly="True"
-                                     Margin="0,0,0,8"/>
-
-                            <Label Grid.Row="2" Content="Unique ID:" Margin="0,0,0,4"/>
-                            <TextBox Grid.Row="3"
-                                     Text="{Binding SelectedActor.UnicId}"
-                                     IsReadOnly="True"
-                                     Margin="0,0,0,8"/>
-
-                            <Label Grid.Row="4" Content="Component Count:" Margin="0,0,0,4"/>
-                            <TextBox Grid.Row="5"
-                                     Text="{Binding SelectedActor.ComponentList.Count}"
-                                     IsReadOnly="True"/>
-                        </Grid>
-                    </GroupBox>
-
-                </StackPanel>
-            </ScrollViewer>
+                <!-- Right Panel - Component Management & Properties -->
+                <Grid Grid.Column="2" Margin="4,8,8,8">
+                    <TabControl>
+                        <TabItem Header="Components">
+                            <controls:ComponentListView DataContext="{Binding ComponentListViewModel}"/>
+                        </TabItem>
+                        <TabItem Header="Properties">
+                            <controls:XmlPropertyGrid DataContext="{Binding XmlPropertyGridViewModel}"/>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </Grid>
 
             <!-- Status Bar -->
             <Border Grid.Row="2"
