@@ -105,24 +105,33 @@
                                         <Setter.Value>
                                             <ControlTemplate TargetType="Button">
                                                 <Border Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
                                                         CornerRadius="8"
                                                         Padding="{TemplateBinding Padding}">
                                                     <ContentPresenter/>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="#1AFFFFFF"/>
+                                                        <Setter Property="Background" Value="#1AFFFFFF"/>
                                                     </Trigger>
                                                     <Trigger Property="IsPressed" Value="True">
-                                                    <Setter Property="Background" Value="#33FFFFFF"/>
+                                                        <Setter Property="Background" Value="#33FFFFFF"/>
                                                     </Trigger>
                                                     <Trigger Property="IsEnabled" Value="False">
                                                         <Setter Property="Opacity" Value="0.6"/>
                                                         <Setter Property="Cursor" Value="Arrow"/>
                                                     </Trigger>
-                                                <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
-                                                    <Setter Property="Background" Value="#1AFFFFFF"/>
-                                                </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
+                                                        <Setter Property="Background" Value="#2AFFFFFF"/>
+                                                        <Setter Property="BorderBrush" Value="#4AFFFFFF"/>
+                                                        <Setter Property="BorderThickness" Value="1"/>
+                                                        <Setter Property="Effect">
+                                                            <Setter.Value>
+                                                                <DropShadowEffect BlurRadius="4" ShadowDepth="2" Opacity="0.3" Color="#FFFFFF"/>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Setter.Value>
@@ -133,18 +142,53 @@
                                 <materialDesign:PackIcon Kind="GamepadVariant"
                                                          Width="20" Height="20"
                                                      Foreground="White"
-                                                     VerticalAlignment="Center"/>
+                                                     VerticalAlignment="Center">
+                                    <materialDesign:PackIcon.Style>
+                                        <Style TargetType="materialDesign:PackIcon">
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="Opacity" Value="1.0"/>
+                                        </Style>
+                                    </materialDesign:PackIcon.Style>
+                                </materialDesign:PackIcon>
                             <StackPanel Margin="8,0,0,0">
-                                    <TextBlock Text="Editor"
+                                <TextBlock Text="Editor"
                                            FontSize="13"
                                            FontWeight="SemiBold"
                                            Foreground="White"
-                                           VerticalAlignment="Center"/>
-                                    <TextBlock Text="Scene and object editor"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
+                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                                                    <Setter Property="Opacity" Value="1.0"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="Scene and object editor"
                                            FontSize="10"
                                            Foreground="White"
                                            Opacity="0.8"
-                                           Margin="0,1,0,0"/>
+                                           Margin="0,1,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="Opacity" Value="0.8"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
+                                                    <Setter Property="Opacity" Value="1.0"/>
+                                                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                                                    <Setter Property="FontWeight" Value="Medium"/>
+                                                    <Setter Property="FontSize" Value="11"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                             </StackPanel>
                         </Button>
@@ -161,24 +205,33 @@
                                         <Setter.Value>
                                             <ControlTemplate TargetType="Button">
                                                 <Border Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
                                                         CornerRadius="8"
                                                         Padding="{TemplateBinding Padding}">
                                                     <ContentPresenter/>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="#1AFFFFFF"/>
+                                                        <Setter Property="Background" Value="#1AFFFFFF"/>
                                                     </Trigger>
                                                     <Trigger Property="IsPressed" Value="True">
-                                                    <Setter Property="Background" Value="#33FFFFFF"/>
+                                                        <Setter Property="Background" Value="#33FFFFFF"/>
                                                     </Trigger>
                                                     <Trigger Property="IsEnabled" Value="False">
                                                         <Setter Property="Opacity" Value="0.6"/>
                                                         <Setter Property="Cursor" Value="Arrow"/>
                                                     </Trigger>
-                                                <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
-                                                    <Setter Property="Background" Value="#1AFFFFFF"/>
-                                                </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
+                                                        <Setter Property="Background" Value="#2AFFFFFF"/>
+                                                        <Setter Property="BorderBrush" Value="#4AFFFFFF"/>
+                                                        <Setter Property="BorderThickness" Value="1"/>
+                                                        <Setter Property="Effect">
+                                                            <Setter.Value>
+                                                                <DropShadowEffect BlurRadius="4" ShadowDepth="2" Opacity="0.3" Color="#FFFFFF"/>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Setter.Value>
@@ -189,18 +242,59 @@
                                 <materialDesign:PackIcon Kind="Cog"
                                                          Width="20" Height="20"
                                                      Foreground="White"
-                                                     VerticalAlignment="Center"/>
+                                                     VerticalAlignment="Center">
+                                    <materialDesign:PackIcon.Style>
+                                        <Style TargetType="materialDesign:PackIcon">
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="Opacity" Value="0.7"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
+                                                    <Setter Property="Opacity" Value="1.0"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </materialDesign:PackIcon.Style>
+                                </materialDesign:PackIcon>
                             <StackPanel Margin="8,0,0,0">
-                                    <TextBlock Text="Assets Cooker"
+                                <TextBlock Text="Assets Cooker"
                                            FontSize="13"
                                            FontWeight="SemiBold"
                                            Foreground="White"
-                                           VerticalAlignment="Center"/>
-                                    <TextBlock Text="Process and optimize assets"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="Opacity" Value="0.7"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
+                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                                                    <Setter Property="Opacity" Value="1.0"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="Process and optimize assets"
                                            FontSize="10"
                                            Foreground="White"
-                                           Opacity="0.8"
-                                           Margin="0,1,0,0"/>
+                                           Opacity="0.6"
+                                           Margin="0,1,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="Opacity" Value="0.6"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
+                                                    <Setter Property="Opacity" Value="1.0"/>
+                                                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                                                    <Setter Property="FontWeight" Value="Medium"/>
+                                                    <Setter Property="FontSize" Value="11"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                             </StackPanel>
                         </Button>
