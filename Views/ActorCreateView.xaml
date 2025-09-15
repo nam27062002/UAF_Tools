@@ -1,0 +1,237 @@
+<UserControl x:Class="DANCustomTools.Views.ActorCreateView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:converters="clr-namespace:DANCustomTools.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="400"
+             Background="{StaticResource GameEditorBackgroundBrush}"
+             FontFamily="Segoe UI">
+
+    <UserControl.Resources>
+        <converters:ObjectToBoolConverter x:Key="ObjectToBoolConverter"/>
+        <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <materialDesign:Card Style="{StaticResource GameEditorCardStyle}" Margin="4">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource GameEditorAccentBrush}"
+                    Padding="16,12">
+                <DockPanel>
+                    <materialDesign:PackIcon Kind="AccountCircle"
+                                             Width="22" Height="22"
+                                             VerticalAlignment="Center"
+                                             Foreground="White"
+                                             DockPanel.Dock="Left"/>
+                    <TextBlock Text="Actor Creator"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               Margin="12,0,0,0"
+                               DockPanel.Dock="Left"/>
+
+                    <!-- Connection Status -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                DockPanel.Dock="Right">
+                        <Ellipse Width="8" Height="8"
+                                 Margin="0,0,6,0"
+                                 VerticalAlignment="Center">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{StaticResource GameEditorWarningBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                            <Setter Property="Fill" Value="{StaticResource GameEditorSuccessBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock Text="Online"
+                                   FontSize="11"
+                                   FontWeight="Medium"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.9"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Main Content -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="16">
+                <StackPanel>
+
+                    <!-- Action Buttons -->
+                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                                Background="{StaticResource GameEditorPrimaryBrush}"
+                                Command="{Binding CreateNewActorCommand}"
+                                IsEnabled="{Binding IsLoading}"
+                                Margin="4"
+                                Padding="12,8">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Plus" Width="16" Height="16" Margin="0,0,8,0"/>
+                                <TextBlock Text="New Actor"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                                Background="{StaticResource GameEditorAccentBrush}"
+                                Command="{Binding SaveActorCommand}"
+                                IsEnabled="{Binding IsLoading}"
+                                Margin="4"
+                                Padding="12,8">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="ContentSave" Width="16" Height="16" Margin="0,0,8,0"/>
+                                <TextBlock Text="Save"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                                Command="{Binding RefreshCommand}"
+                                IsEnabled="{Binding IsLoading}"
+                                Margin="4"
+                                Padding="12,8">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" Margin="0,0,8,0"/>
+                                <TextBlock Text="Refresh"/>
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
+
+                    <!-- Actor List -->
+                    <GroupBox Header="Actors" Style="{StaticResource MaterialDesignCardGroupBox}" Margin="0,0,0,16">
+                        <Grid>
+                            <ListBox ItemsSource="{Binding ActorList}"
+                                     SelectedItem="{Binding SelectedActor}"
+                                     Height="200"
+                                     IsEnabled="{Binding IsLoading}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="8,4">
+                                            <materialDesign:PackIcon Kind="AccountCircle"
+                                                                     Width="16" Height="16"
+                                                                     Margin="0,0,8,0"
+                                                                     VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource MaterialDesignListBoxItem}">
+                                        <Setter Property="Padding" Value="4"/>
+                                        <EventSetter Event="MouseDoubleClick" Handler="ActorItem_MouseDoubleClick"/>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+
+                            <!-- Empty State -->
+                            <StackPanel VerticalAlignment="Center"
+                                        HorizontalAlignment="Center">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ActorList.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <materialDesign:PackIcon Kind="EmoticonSadOutline"
+                                                         Width="48" Height="48"
+                                                         Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                         HorizontalAlignment="Center"/>
+                                <TextBlock Text="No actors found"
+                                           FontSize="14"
+                                           Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </GroupBox>
+
+                    <!-- Component List -->
+                    <GroupBox Header="Available Components" Style="{StaticResource MaterialDesignCardGroupBox}" Margin="0,0,0,16">
+                        <ListBox ItemsSource="{Binding ComponentList}"
+                                 Height="150"
+                                 IsEnabled="{Binding IsLoading}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="8,4">
+                                        <materialDesign:PackIcon Kind="Component"
+                                                                 Width="16" Height="16"
+                                                                 Margin="0,0,8,0"
+                                                                 VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding}"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </GroupBox>
+
+                    <!-- Actor Properties -->
+                    <GroupBox Header="Actor Properties" Style="{StaticResource MaterialDesignCardGroupBox}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBox Grid.Row="0"
+                                     materialDesign:HintAssist.Hint="Actor Name"
+                                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                     IsEnabled="{Binding IsLoading}"
+                                     Margin="0,0,0,8"/>
+
+                            <TextBox Grid.Row="1"
+                                     materialDesign:HintAssist.Hint="Description"
+                                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                     AcceptsReturn="True"
+                                     MaxLines="3"
+                                     IsEnabled="{Binding IsLoading}"/>
+                        </Grid>
+                    </GroupBox>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Status Bar -->
+            <Border Grid.Row="2"
+                    Background="{DynamicResource MaterialDesignDivider}"
+                    Padding="16,8">
+                <DockPanel>
+                    <!-- Loading Indicator -->
+                    <ProgressBar DockPanel.Dock="Left"
+                                 Width="16" Height="16"
+                                 IsIndeterminate="True"
+                                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                                 Margin="0,0,8,0"/>
+
+                    <!-- Status Message -->
+                    <TextBlock Text="{Binding StatusMessage}"
+                               FontSize="12"
+                               Foreground="{DynamicResource MaterialDesignBody}"
+                               VerticalAlignment="Center"/>
+                </DockPanel>
+            </Border>
+
+        </Grid>
+    </materialDesign:Card>
+</UserControl>
