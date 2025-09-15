@@ -61,10 +61,67 @@ namespace DANCustomTools.Views
 
         private void XmlPropertyGrid_propertiesChanged(object sender, PropertiesChangedEventArgs e)
         {
-            // Forward to ViewModel which will send to engine
-            if (ViewModel != null)
+            if (ViewModel == null) return;
+            try
             {
+                if (!string.IsNullOrEmpty(e.xmlText))
+                {
+                    System.Xml.Linq.XDocument.Parse(e.xmlText);
+                }
                 ViewModel.XmlDisplayText = e.xmlText;
+            }
+            catch (System.Xml.XmlException xmlEx)
+            {
+                // Log the XML serialization error and try to sanitize
+                System.Diagnostics.Debug.WriteLine($"XML serialization error from XMLPropertyGrid: {xmlEx.Message}");
+                System.Diagnostics.Debug.WriteLine($"Problematic XML: {e.xmlText}");
+
+                // Try to sanitize the XML by escaping invalid characters
+                var sanitizedXml = SanitizeXmlText(e.xmlText);
+                try
+                {
+                    System.Xml.Linq.XDocument.Parse(sanitizedXml);
+                    ViewModel.XmlDisplayText = sanitizedXml;
+                    System.Diagnostics.Debug.WriteLine("XML successfully sanitized and applied");
+                }
+                catch
+                {
+                    System.Diagnostics.Debug.WriteLine("Failed to sanitize XML, skipping update to prevent crash");
+                }
+            }
+        }
+
+        private string SanitizeXmlText(string xmlText)
+        {
+            if (string.IsNullOrEmpty(xmlText))
+                return xmlText;
+            try
+            {
+                var doc = System.Xml.Linq.XDocument.Parse(xmlText);
+                return doc.ToString();
+            }
+            catch
+            {
+                var result = xmlText;
+                result = System.Text.RegularExpressions.Regex.Replace(result,
+                    @"(\w+\s*=\s*"")[^""]*("")",
+                    match => {
+                        var value = match.Value;
+                        var start = value.IndexOf('"') + 1;
+                        var end = value.LastIndexOf('"');
+                        if (start < end)
+                        {
+                            var attributeValue = value.Substring(start, end - start);
+                            var escapedValue = attributeValue
+                                .Replace("&", "&amp;")
+                                .Replace("<", "&lt;")
+                                .Replace(">", "&gt;");
+                            return value.Substring(0, start) + escapedValue + value.Substring(end);
+                        }
+                        return value;
+                    });
+
+                return result;
             }
         }
 
@@ -79,13 +136,11 @@ namespace DANCustomTools.Views
             host.Child = _xmlPropertyGrid;
             WinFormsHostContainer.Children.Clear();
             WinFormsHostContainer.Children.Add(host);
-            if (ViewModel != null)
+            if (ViewModel == null) return;
+            ViewModel.LoadXmlIntoHostedGrid(_xmlPropertyGrid);
+            if (!string.IsNullOrEmpty(ViewModel.DataPath))
             {
-                ViewModel.LoadXmlIntoHostedGrid(_xmlPropertyGrid);
-                if (!string.IsNullOrEmpty(ViewModel.DataPath))
-                {
-                    _xmlPropertyGrid.setDataPath(ViewModel.DataPath);
-                }
+                _xmlPropertyGrid.setDataPath(ViewModel.DataPath);
             }
         }
     }
