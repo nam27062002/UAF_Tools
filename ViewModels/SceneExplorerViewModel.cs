@@ -714,12 +714,22 @@ namespace DANCustomTools.ViewModels
 
             try
             {
-                var oldName = SelectedObject.FriendlyName;
+                var objectToRename = SelectedObject;
+                var oldName = objectToRename.FriendlyName;
+                var trimmedNewName = newName.Trim();
 
                 // Execute rename through service
-                _sceneService.RenameObject(SelectedObject.ObjectRef, newName.Trim());
+                _sceneService.RenameObject(objectToRename.ObjectRef, trimmedNewName);
 
-                LogService.Info($"Renamed object from '{oldName}' to '{newName.Trim()}'");
+                // Find the corresponding item in the tree and update its name
+                var treeItem = FindTreeItemByObjectRef(SceneTreeItems, objectToRename.ObjectRef);
+                if (treeItem != null)
+                {
+                    // This assumes DisplayName property setter will notify the UI
+                    treeItem.DisplayName = trimmedNewName;
+                }
+
+                LogService.Info($"Renamed object from '{oldName}' to '{trimmedNewName}'");
             }
             catch (Exception ex)
             {
