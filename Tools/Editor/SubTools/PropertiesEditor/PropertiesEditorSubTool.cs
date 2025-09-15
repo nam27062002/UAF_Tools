@@ -24,7 +24,7 @@ namespace DANCustomTools.Tools.Editor.SubTools.PropertiesEditor
 
         public override ViewModelBase CreateViewModel()
         {
-            return ServiceProvider.GetRequiredService<PropertiesEditorViewModel>();
+            return CreateAndTrackViewModel<PropertiesEditorViewModel>();
         }
 
         public override void Initialize()

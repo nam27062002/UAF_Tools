@@ -36,6 +36,9 @@ namespace DANCustomTools.Core.Services
             if (_currentMainTool != null)
             {
                 _currentMainTool.IsActive = false;
+
+                // Cleanup the current MainTool and its SubTools to release resources
+                _currentMainTool.Cleanup();
             }
 
             _currentMainTool = mainTool;

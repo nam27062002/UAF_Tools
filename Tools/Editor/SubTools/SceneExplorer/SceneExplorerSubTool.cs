@@ -24,7 +24,7 @@ namespace DANCustomTools.Tools.Editor.SubTools.SceneExplorer
 
         public override ViewModelBase CreateViewModel()
         {
-            return ServiceProvider.GetRequiredService<SceneExplorerViewModel>();
+            return CreateAndTrackViewModel<SceneExplorerViewModel>();
         }
 
         public override void Initialize()

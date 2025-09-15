@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 
 namespace DANCustomTools.Core.Services
 {
-    public abstract class EnginePluginServiceBase : IDisposable
+    public abstract class EnginePluginServiceBase(ILogService logService, IEngineHostService engineHost) : IDisposable
     {
-        protected readonly ILogService LogService;
-        protected readonly IEngineHostService EngineHost;
+        protected readonly ILogService LogService = logService ?? throw new ArgumentNullException(nameof(logService));
+        protected readonly IEngineHostService EngineHost = engineHost ?? throw new ArgumentNullException(nameof(engineHost));
         protected readonly object ConnectionLock = new();
 
         private pluginWrapper? _plugin;
@@ -59,12 +59,6 @@ namespace DANCustomTools.Core.Services
                     _isConnected = false;
                 }
             }
-        }
-
-        protected EnginePluginServiceBase(ILogService logService, IEngineHostService engineHost)
-        {
-            LogService = logService ?? throw new ArgumentNullException(nameof(logService));
-            EngineHost = engineHost ?? throw new ArgumentNullException(nameof(engineHost));
         }
 
         public virtual async Task StartAsync(string[] arguments, CancellationToken cancellationToken = default)

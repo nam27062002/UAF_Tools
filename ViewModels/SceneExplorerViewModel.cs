@@ -93,7 +93,7 @@ namespace DANCustomTools.ViewModels
 
             // Initialize PropertiesEditor
             InitializePropertiesEditor();
-
+            UpdateConnectionStatus();
             // Start services
             _ = StartServicesAsync(_arguments);
         }
@@ -334,6 +334,11 @@ namespace DANCustomTools.ViewModels
                 }
             }
             return null;
+        }
+
+        private void UpdateConnectionStatus()
+        {
+            IsConnected = _sceneService.IsConnected;
         }
 
         private void ClearTreeSelection(ObservableCollection<SceneTreeItemViewModel> items)
@@ -707,18 +712,11 @@ namespace DANCustomTools.ViewModels
 
         public override void Dispose()
         {
-            // Unsubscribe from events
             _sceneService.OnlineSceneTreeUpdated -= OnOnlineSceneTreeUpdated;
             _sceneService.OfflineSceneTreesUpdated -= OnOfflineSceneTreesUpdated;
             _sceneService.ObjectSelectedFromRuntime -= OnObjectSelectedFromRuntime;
             _propertiesService.PropertiesUpdated -= OnPropertiesUpdated;
-
-            // Don't stop singleton services here - they should remain running for the application lifetime
-            // The StartAsync method now handles the case where services are already running gracefully
-
-            // Dispose PropertiesEditor
             PropertiesEditor?.ViewModel?.Dispose();
-
             base.Dispose();
         }
     }

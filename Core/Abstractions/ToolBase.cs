@@ -1,5 +1,6 @@
 #nullable enable
 using DANCustomTools.MVVM;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -71,6 +72,8 @@ namespace DANCustomTools.Core.Abstractions
 
     public abstract class SubToolBase : ISubTool
     {
+        private readonly List<ViewModelBase> _createdViewModels = new();
+
         public abstract string Name { get; }
         public abstract string DisplayName { get; }
         public abstract string Description { get; }
@@ -88,12 +91,39 @@ namespace DANCustomTools.Core.Abstractions
 
         public abstract ViewModelBase CreateViewModel();
 
+        /// <summary>
+        /// Creates and tracks a ViewModel for proper disposal
+        /// </summary>
+        protected ViewModelBase CreateAndTrackViewModel<T>() where T : ViewModelBase
+        {
+            var viewModel = ServiceProvider.GetRequiredService<T>();
+            _createdViewModels.Add(viewModel);
+            return viewModel;
+        }
+
         public virtual void Initialize()
         {
         }
 
         public virtual void Cleanup()
         {
+            // Dispose all created ViewModels to prevent memory leaks
+            foreach (var viewModel in _createdViewModels)
+            {
+                try
+                {
+                    if (viewModel is IDisposable disposableViewModel)
+                    {
+                        disposableViewModel.Dispose();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log the exception but continue cleanup
+                    System.Diagnostics.Debug.WriteLine($"Error disposing ViewModel {viewModel.GetType().Name}: {ex.Message}");
+                }
+            }
+            _createdViewModels.Clear();
         }
     }
 }

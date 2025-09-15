@@ -10,7 +10,8 @@ using System.Threading.Tasks;
 
 namespace DANCustomTools.Services
 {
-    public class SceneExplorerService : EnginePluginServiceBase, ISceneExplorerService
+    public class SceneExplorerService(ILogService logService, IEngineHostService engineHost)
+        : EnginePluginServiceBase(logService, engineHost), ISceneExplorerService
     {
 
         // Queues for thread-safe communication
@@ -26,12 +27,6 @@ namespace DANCustomTools.Services
         public event EventHandler<SceneTreeModel>? OnlineSceneTreeUpdated;
         public event EventHandler<List<SceneTreeModel>>? OfflineSceneTreesUpdated;
         public event EventHandler<uint>? ObjectSelectedFromRuntime;
-
-        public SceneExplorerService(ILogService logService, IEngineHostService engineHost)
-            : base(logService, engineHost)
-        {
-        }
-
 
 
         public void SelectScene(string uniqueScene)
