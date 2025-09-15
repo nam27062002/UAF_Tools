@@ -25,6 +25,8 @@ namespace DANCustomTools.ViewModels
         private bool _isLoading = false;
         private ActorInfo? _selectedActor;
         private string _newActorName = string.Empty;
+        private string? _selectedAvailableComponent;
+        private string? _selectedActorComponent;
 
         // Collections
         public ObservableCollection<ActorInfo> ActorList { get; private set; } = new();
@@ -92,6 +94,18 @@ namespace DANCustomTools.ViewModels
         {
             get => _newActorName;
             set => SetProperty(ref _newActorName, value);
+        }
+
+        public string? SelectedAvailableComponent
+        {
+            get => _selectedAvailableComponent;
+            set => SetProperty(ref _selectedAvailableComponent, value);
+        }
+
+        public string? SelectedActorComponent
+        {
+            get => _selectedActorComponent;
+            set => SetProperty(ref _selectedActorComponent, value);
         }
 
         #endregion
@@ -248,6 +262,10 @@ namespace DANCustomTools.ViewModels
             try
             {
                 StatusMessage = "Initializing Actor Creator...";
+                
+                // Try to connect to engine first
+                await _actorCreateService.ConnectAsync();
+                
                 await RefreshAsync();
                 StatusMessage = "Actor Creator ready";
             }
@@ -348,6 +366,193 @@ namespace DANCustomTools.ViewModels
             XmlPropertyGridViewModel?.Dispose();
             _actorCreateService?.Dispose();
             base.Dispose();
+        }
+
+        #endregion
+
+        #region Component Management Commands
+
+        private async Task AddComponentAsync()
+        {
+            if (SelectedActor == null || string.IsNullOrEmpty(SelectedAvailableComponent))
+            {
+                StatusMessage = "Please select an actor and a component to add";
+                return;
+            }
+
+            try
+            {
+                StatusMessage = $"Adding {SelectedAvailableComponent} to {SelectedActor.Name}...";
+                
+                // Use real component management service
+                bool success = await _actorCreateService.AddComponentToActorAsync(SelectedActor.Name, SelectedAvailableComponent);
+                
+                if (success)
+                {
+                    // Add to local collection for immediate UI update
+                    if (!SelectedActor.ComponentList.Contains(SelectedAvailableComponent))
+                    {
+                        SelectedActor.ComponentList.Add(SelectedAvailableComponent);
+                        UpdateSelectedActorComponents();
+                    }
+                    
+                    StatusMessage = $"Component {SelectedAvailableComponent} added successfully";
+                }
+                else
+                {
+                    StatusMessage = $"Failed to add component {SelectedAvailableComponent}";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error adding component: {ex.Message}";
+            }
+        }
+
+        private async Task RemoveComponentAsync()
+        {
+            if (SelectedActor == null || string.IsNullOrEmpty(SelectedActorComponent))
+            {
+                StatusMessage = "Please select an actor and a component to remove";
+                return;
+            }
+
+            try
+            {
+                StatusMessage = $"Removing {SelectedActorComponent} from {SelectedActor.Name}...";
+                
+                // Use real component management service
+                bool success = await _actorCreateService.RemoveComponentFromActorAsync(SelectedActor.Name, SelectedActorComponent);
+                
+                if (success)
+                {
+                    // Remove from local collection for immediate UI update
+                    SelectedActor.ComponentList.Remove(SelectedActorComponent);
+                    UpdateSelectedActorComponents();
+                    
+                    StatusMessage = $"Component {SelectedActorComponent} removed successfully";
+                }
+                else
+                {
+                    StatusMessage = $"Failed to remove component {SelectedActorComponent}";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error removing component: {ex.Message}";
+            }
+        }
+
+        private async Task CopyComponentAsync()
+        {
+            if (SelectedActor == null || string.IsNullOrEmpty(SelectedActorComponent))
+            {
+                StatusMessage = "Please select an actor and a component to copy";
+                return;
+            }
+
+            try
+            {
+                StatusMessage = $"Copying {SelectedActorComponent} from {SelectedActor.Name}...";
+                
+                // Get component data first
+                string? componentData = await _actorCreateService.GetComponentDataAsync(SelectedActor.Name, SelectedActorComponent);
+                if (string.IsNullOrEmpty(componentData))
+                {
+                    StatusMessage = $"No data found for component {SelectedActorComponent}";
+                    return;
+                }
+                
+                // Use real component management service
+                bool success = await _actorCreateService.CopyComponentAsync(SelectedActor.Name, SelectedActorComponent, componentData);
+                
+                if (success)
+                {
+                    StatusMessage = $"Component {SelectedActorComponent} copied to clipboard";
+                }
+                else
+                {
+                    StatusMessage = $"Failed to copy component {SelectedActorComponent}";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error copying component: {ex.Message}";
+            }
+        }
+
+        private async Task CutComponentAsync()
+        {
+            if (SelectedActor == null || string.IsNullOrEmpty(SelectedActorComponent))
+            {
+                StatusMessage = "Please select an actor and a component to cut";
+                return;
+            }
+
+            try
+            {
+                StatusMessage = $"Cutting {SelectedActorComponent} from {SelectedActor.Name}...";
+                
+                // Get component data first
+                string? componentData = await _actorCreateService.GetComponentDataAsync(SelectedActor.Name, SelectedActorComponent);
+                if (string.IsNullOrEmpty(componentData))
+                {
+                    StatusMessage = $"No data found for component {SelectedActorComponent}";
+                    return;
+                }
+                
+                // Use real component management service
+                bool success = await _actorCreateService.CutComponentAsync(SelectedActor.Name, SelectedActorComponent, componentData);
+                
+                if (success)
+                {
+                    // Remove from local collection for immediate UI update
+                    SelectedActor.ComponentList.Remove(SelectedActorComponent);
+                    UpdateSelectedActorComponents();
+                    
+                    StatusMessage = $"Component {SelectedActorComponent} cut to clipboard";
+                }
+                else
+                {
+                    StatusMessage = $"Failed to cut component {SelectedActorComponent}";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error cutting component: {ex.Message}";
+            }
+        }
+
+        private async Task PasteComponentAsync()
+        {
+            if (SelectedActor == null)
+            {
+                StatusMessage = "Please select an actor to paste component to";
+                return;
+            }
+
+            try
+            {
+                StatusMessage = $"Pasting component to {SelectedActor.Name}...";
+                
+                // Use real component management service
+                bool success = await _actorCreateService.PasteComponentAsync(SelectedActor.Name);
+                
+                if (success)
+                {
+                    // Refresh actor component list to get the new component
+                    await RefreshAsync();
+                    StatusMessage = $"Component pasted to {SelectedActor.Name} successfully";
+                }
+                else
+                {
+                    StatusMessage = $"Failed to paste component to {SelectedActor.Name}";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error pasting component: {ex.Message}";
+            }
         }
 
         #endregion

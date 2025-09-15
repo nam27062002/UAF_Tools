@@ -61,6 +61,14 @@ namespace DANCustomTools
             // Core Services - Register in dependency order
             services.AddSingleton<ILogService, ConsoleLogService>();
             services.AddSingleton<IEngineHostService, EngineHostService>();
+            
+            // Engine Integration Service (new)
+            services.AddSingleton<IEngineIntegrationService, EngineIntegrationService>();
+            
+            // Component Management Service (new)
+            services.AddSingleton<IComponentManagementService, ComponentManagementService>();
+            
+            // Tool Services
             services.AddSingleton<ISceneExplorerService, SceneExplorerService>();
             services.AddSingleton<IActorCreateService, ActorCreateService>();
             services.AddSingleton<IPropertiesEditorService, PropertiesEditorService>();
