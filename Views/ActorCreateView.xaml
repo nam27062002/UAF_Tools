@@ -12,8 +12,35 @@
              FontFamily="Segoe UI">
 
     <UserControl.Resources>
-        <converters:ObjectToBoolConverter x:Key="ObjectToBoolConverter"/>
-        <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </UserControl.Resources>
+    <materialDesign:Card Style="{StaticResource GameEditorCardStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Background="{StaticResource GameEditorHeaderBrush}"
+                    Padding="16,12">
+                <DockPanel>
+                    <materialDesign:PackIcon Kind="FileTree"
+                                             Width="22" Height="22"
+                                             VerticalAlignment="Center"
+                                             Foreground="White"
+                                             DockPanel.Dock="Left" />
+                    <TextBlock Text="Actor Create"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               Margin="12,0,0,0"
+                               DockPanel.Dock="Left" />
+                </DockPanel>
+            </Border>
+        </Grid>
+    </materialDesign:Card>
 </UserControl>
