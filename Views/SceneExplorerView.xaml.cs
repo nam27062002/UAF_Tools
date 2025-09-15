@@ -90,7 +90,10 @@ namespace DANCustomTools.Views
 
             var contextMenu = new ContextMenu
             {
-                Style = System.Windows.Application.Current.FindResource("MaterialDesignContextMenu") as Style
+                // Use default style - clean and simple
+                Background = System.Windows.Media.Brushes.White,
+                BorderBrush = System.Windows.Media.Brushes.LightGray,
+                BorderThickness = new Thickness(1)
             };
 
             // Duplicate command

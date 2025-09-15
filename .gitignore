@@ -52,3 +52,4 @@ bld/
 *.pdb
 *.sbr
 *.metagen
+nul
