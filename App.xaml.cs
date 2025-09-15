@@ -19,7 +19,7 @@ namespace DANCustomTools
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            
+
             _host = CreateHostBuilder(e.Args).Build();
             ServiceProvider = _host.Services;
 
@@ -30,7 +30,7 @@ namespace DANCustomTools
                 var logService = ServiceProvider.GetService<ILogService>();
                 logService?.Warning("Tool initializer was not properly initialized during DI setup");
             }
-            
+
             ShutdownMode = ShutdownMode.OnMainWindowClose;
 
             var mainWindow = new MainWindow();
@@ -61,16 +61,15 @@ namespace DANCustomTools
             // Core Services - Register in dependency order
             services.AddSingleton<ILogService, ConsoleLogService>();
             services.AddSingleton<IEngineHostService, EngineHostService>();
-            
+
             // Engine Integration Service (new)
             services.AddSingleton<IEngineIntegrationService, EngineIntegrationService>();
-            
+
             // Component Management Service (new)
             services.AddSingleton<IComponentManagementService, ComponentManagementService>();
-            
+
             // Tool Services
             services.AddSingleton<ISceneExplorerService, SceneExplorerService>();
-            services.AddSingleton<IActorCreateService, ActorCreateService>();
             services.AddSingleton<IPropertiesEditorService, PropertiesEditorService>();
         }
 
