@@ -13,14 +13,14 @@
              FontFamily="Segoe UI">
 
     <UserControl.Resources>
-        <converters:BoolToOnlineStatusConverter x:Key="BoolToOnlineStatusConverter"/>
-        <converters:ObjectToBoolConverter x:Key="ObjectToBoolConverter"/>
-        <converters:ConnectionStatusColorConverter x:Key="ConnectionStatusColorConverter"/>
+        <converters:BoolToOnlineStatusConverter x:Key="BoolToOnlineStatusConverter" />
+        <converters:ObjectToBoolConverter x:Key="ObjectToBoolConverter" />
+        <converters:ConnectionStatusColorConverter x:Key="ConnectionStatusColorConverter" />
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <!-- Header/Title Bar -->
@@ -29,17 +29,14 @@
                        Foreground="White"
                        FontSize="16"
                        FontWeight="Bold"
-                       VerticalAlignment="Center"/>
+                       VerticalAlignment="Center" />
         </Border>
 
-        <!-- Triple Split Layout: Scene Explorer (Left) | Actor Creator (Center) | Properties Editor (Right) -->
         <Grid Grid.Row="1" Margin="0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*" MinWidth="300"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="1*" MinWidth="350"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="1*" MinWidth="300"/>
+                <ColumnDefinition Width="1*" MinWidth="300" />   <!-- Left 50% -->
+                <ColumnDefinition Width="Auto" />               <!-- Splitter -->
+                <ColumnDefinition Width="1*" MinWidth="350" />  <!-- Right 50% -->
             </Grid.ColumnDefinitions>
 
             <!-- Left Panel: Scene Explorer -->
@@ -48,41 +45,32 @@
                             Margin="0">
                 <ContentControl.Resources>
                     <DataTemplate DataType="{x:Type viewModels:SceneExplorerViewModel}">
-                        <views:SceneExplorerView DataContext="{Binding}"/>
+                        <views:SceneExplorerView DataContext="{Binding}" />
                     </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>
 
-            <!-- First Splitter -->
+            <!-- Splitter -->
             <GridSplitter Grid.Column="1"
                           Width="8"
                           Background="{DynamicResource MaterialDesignDivider}"
                           VerticalAlignment="Stretch"
                           HorizontalAlignment="Center"
-                          ResizeBehavior="PreviousAndNext"/>
+                          ResizeBehavior="PreviousAndNext" />
 
-            <!-- Center Panel: Properties Editor -->
+            <!-- Right Panel: Properties Editor -->
             <ContentControl Grid.Column="2"
                             Content="{Binding PropertiesEditorViewModel}"
                             Margin="0">
                 <ContentControl.Resources>
                     <DataTemplate DataType="{x:Type viewModels:PropertiesEditorViewModel}">
-                        <views:PropertiesEditorView DataContext="{Binding}"/>
+                        <views:PropertiesEditorView DataContext="{Binding}" />
                     </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>
 
-            <!-- Second Splitter -->
-            <GridSplitter Grid.Column="3"
-                          Width="8"
-                          Background="{DynamicResource MaterialDesignDivider}"
-                          VerticalAlignment="Stretch"
-                          HorizontalAlignment="Center"
-                          ResizeBehavior="PreviousAndNext"/>
-
-            <!-- Floating Action Button -->
-            <!-- Quick Action Buttons -->
-            <StackPanel Grid.Column="4"
+            <!-- Floating Action Buttons -->
+            <StackPanel Grid.Column="2"
                         Orientation="Vertical"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Bottom"
@@ -91,16 +79,17 @@
                         ToolTip="Connect to Engine"
                         Command="{Binding SceneExplorerViewModel.RefreshCommand}"
                         Margin="2">
-                    <materialDesign:PackIcon Kind="Connection" Width="16" Height="16"/>
+                    <materialDesign:PackIcon Kind="Connection" Width="16" Height="16" />
                 </Button>
                 <Button Style="{StaticResource GameEditorToolButtonStyle}"
                         ToolTip="Refresh All"
                         Command="{Binding SceneExplorerViewModel.RefreshCommand}"
                         Margin="2">
-                    <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16"/>
+                    <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" />
                 </Button>
             </StackPanel>
         </Grid>
+
 
         <!-- Loading Overlay -->
         <Border Grid.RowSpan="2"
@@ -112,12 +101,12 @@
                         HorizontalAlignment="Center">
                 <ProgressBar Width="50" Height="50"
                              IsIndeterminate="True"
-                             Value="0"/>
+                             Value="0" />
                 <TextBlock Text="Loading..."
                            FontSize="16"
                            Margin="0,16,0,0"
                            HorizontalAlignment="Center"
-                           Foreground="{DynamicResource MaterialDesignBody}"/>
+                           Foreground="{DynamicResource MaterialDesignBody}" />
             </StackPanel>
         </Border>
     </Grid>
