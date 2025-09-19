@@ -125,16 +125,6 @@
                         Margin="4,2">
                     <materialDesign:PackIcon Kind="UnfoldLessHorizontal" Width="20" Height="20"/>
                 </Button>
-
-                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,2"/>
-
-                <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                        ToolTip="Select in Engine"
-                        Command="{Binding SelectInEngineCommand}"
-                        IsEnabled="{Binding SelectedObject, Converter={x:Static converters:ObjectToBoolConverter.Instance}}"
-                        Margin="4,2">
-                    <materialDesign:PackIcon Kind="CursorDefaultClickOutline" Width="20" Height="20"/>
-                </Button>
             </WrapPanel>
 
             <!-- Main Tree View -->

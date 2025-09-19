@@ -68,26 +68,6 @@
                     </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>
-
-            <!-- Floating Action Buttons -->
-            <StackPanel Grid.Column="2"
-                        Orientation="Vertical"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Bottom"
-                        Margin="0,0,16,16">
-                <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                        ToolTip="Connect to Engine"
-                        Command="{Binding SceneExplorerViewModel.RefreshCommand}"
-                        Margin="2">
-                    <materialDesign:PackIcon Kind="Connection" Width="16" Height="16" />
-                </Button>
-                <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                        ToolTip="Refresh All"
-                        Command="{Binding SceneExplorerViewModel.RefreshCommand}"
-                        Margin="2">
-                    <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" />
-                </Button>
-            </StackPanel>
         </Grid>
 
 
