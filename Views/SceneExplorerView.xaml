@@ -201,8 +201,6 @@
                                     <DataTemplate>
                                         <ToggleButton Content="{Binding DisplayText}"
                                                       IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                      Command="{Binding DataContext.ToggleComponentFilterCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                      CommandParameter="{Binding}"
                                                       Margin="2"
                                                       Padding="8,4"
                                                       FontSize="10">

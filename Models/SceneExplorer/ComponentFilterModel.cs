@@ -8,6 +8,8 @@ namespace DANCustomTools.Models.SceneExplorer
         private string _componentName = string.Empty;
         private bool _isSelected;
         private int _actorCount;
+        
+        public event EventHandler<bool>? SelectionChanged;
 
         public string ComponentName
         {
@@ -18,7 +20,14 @@ namespace DANCustomTools.Models.SceneExplorer
         public bool IsSelected
         {
             get => _isSelected;
-            set => SetProperty(ref _isSelected, value);
+            set 
+            {
+                if (SetProperty(ref _isSelected, value))
+                {
+                    // Notify when IsSelected changes
+                    SelectionChanged?.Invoke(this, value);
+                }
+            }
         }
 
         public int ActorCount

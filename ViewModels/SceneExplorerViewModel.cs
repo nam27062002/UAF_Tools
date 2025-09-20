@@ -51,7 +51,6 @@ namespace DANCustomTools.ViewModels
         
         // Component filter commands
         public ICommand ClearFiltersCommand { get; }
-        public ICommand ToggleComponentFilterCommand { get; }
 
         public ObservableCollection<SceneTreeItemViewModel> SceneTreeItems
         {
@@ -118,7 +117,6 @@ namespace DANCustomTools.ViewModels
 
             // Initialize filter commands
             ClearFiltersCommand = new RelayCommand(ClearAllFilters);
-            ToggleComponentFilterCommand = new RelayCommand<ComponentFilterModel>(ToggleComponentFilter);
 
             // Subscribe to service events
             _sceneService.OnlineSceneTreeUpdated += OnOnlineSceneTreeUpdated;
@@ -800,7 +798,18 @@ namespace DANCustomTools.ViewModels
                 foreach (var component in allComponents.OrderBy(c => c))
                 {
                     var actorCount = actors.Count(a => _componentFilterService.ActorHasAnyComponent(a, new HashSet<string> { component }));
-                    componentModels.Add(new ComponentFilterModel(component, actorCount));
+                    var model = new ComponentFilterModel(component, actorCount);
+                    
+                    // Subscribe to selection changes
+                    model.SelectionChanged += OnComponentSelectionChanged;
+                    
+                    componentModels.Add(model);
+                }
+
+                // Unsubscribe from old models
+                foreach (var oldModel in AvailableComponents)
+                {
+                    oldModel.SelectionChanged -= OnComponentSelectionChanged;
                 }
 
                 AvailableComponents.Clear();
@@ -817,23 +826,29 @@ namespace DANCustomTools.ViewModels
             }
         }
 
-        private void ToggleComponentFilter(ComponentFilterModel? componentModel)
+
+        
+        private void OnComponentSelectionChanged(object? sender, bool isSelected)
         {
-            if (componentModel == null) return;
+            if (sender is not ComponentFilterModel componentModel) return;
 
             try
             {
-                componentModel.IsSelected = !componentModel.IsSelected;
-
-                if (componentModel.IsSelected)
+                if (isSelected)
                 {
-                    SelectedComponents.Add(componentModel.ComponentName);
-                    LogService.Info($"Added component filter: {componentModel.ComponentName}");
+                    if (!SelectedComponents.Contains(componentModel.ComponentName))
+                    {
+                        SelectedComponents.Add(componentModel.ComponentName);
+                        LogService.Info($"Added component filter: {componentModel.ComponentName}");
+                    }
                 }
                 else
                 {
-                    SelectedComponents.Remove(componentModel.ComponentName);
-                    LogService.Info($"Removed component filter: {componentModel.ComponentName}");
+                    if (SelectedComponents.Contains(componentModel.ComponentName))
+                    {
+                        SelectedComponents.Remove(componentModel.ComponentName);
+                        LogService.Info($"Removed component filter: {componentModel.ComponentName}");
+                    }
                 }
 
                 // Notify UI about SelectedComponents change
@@ -843,10 +858,11 @@ namespace DANCustomTools.ViewModels
                 IsComponentFilterEnabled = SelectedComponents.Count > 0;
                 
                 LogService.Info($"Applied filters. Selected components: {SelectedComponents.Count}, Filter enabled: {IsComponentFilterEnabled}");
+                LogService.Info($"Selected components: [{string.Join(", ", SelectedComponents)}]");
             }
             catch (Exception ex)
             {
-                LogService.Error($"Failed to toggle component filter for {componentModel.ComponentName}", ex);
+                LogService.Error($"Failed to handle component selection change for {componentModel.ComponentName}", ex);
             }
         }
 
@@ -854,9 +870,12 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
+                // Temporarily unsubscribe to avoid triggering events during bulk clear
                 foreach (var component in AvailableComponents)
                 {
+                    component.SelectionChanged -= OnComponentSelectionChanged;
                     component.IsSelected = false;
+                    component.SelectionChanged += OnComponentSelectionChanged;
                 }
 
                 SelectedComponents.Clear();
@@ -1001,6 +1020,12 @@ namespace DANCustomTools.ViewModels
 
         public override void Dispose()
         {
+            // Unsubscribe from component events
+            foreach (var component in AvailableComponents)
+            {
+                component.SelectionChanged -= OnComponentSelectionChanged;
+            }
+
             _sceneService.OnlineSceneTreeUpdated -= OnOnlineSceneTreeUpdated;
             _sceneService.OfflineSceneTreesUpdated -= OnOfflineSceneTreesUpdated;
             _sceneService.ObjectSelectedFromRuntime -= OnObjectSelectedFromRuntime;
