@@ -89,6 +89,10 @@ namespace DANCustomTools.ViewModels
             get => _isComponentFilterEnabled;
             set => SetProperty(ref _isComponentFilterEnabled, value);
         }
+        public bool HasComponents
+        {
+            get => AvailableComponents.Count > 0;
+        }
 
         public SceneExplorerViewModel(
             ILogService logService,
@@ -832,6 +836,9 @@ namespace DANCustomTools.ViewModels
 
                 // Default to no filtering (all components selected = show all actors)
                 IsComponentFilterEnabled = false;
+
+                // Notify UI that HasComponents might have changed
+                OnPropertyChanged(nameof(HasComponents));
 
                 LogService.Info($"Populated {AvailableComponents.Count} unique components (all selected by default)");
             }
