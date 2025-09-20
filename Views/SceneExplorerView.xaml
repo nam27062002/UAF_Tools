@@ -211,7 +211,7 @@
                     Background="{DynamicResource MaterialDesignBackground}"
                     BorderThickness="0,1,0,1"
                     BorderBrush="{DynamicResource MaterialDesignDivider}"
-                    Padding="12,6">
+                    Padding="8,3">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -221,10 +221,52 @@
                     <!-- Search Box -->
                     <TextBox Grid.Column="0"
                              Name="SearchTextBox"
-                             Style="{StaticResource SearchTextBoxStyle}"
                              TextChanged="SearchTextBox_TextChanged"
-                             Margin="0,0,12,0"
-                             materialDesign:HintAssist.Hint="Search actors and scenes..."/>
+                             Margin="0,0,8,0"
+                             Height="32"
+                             Padding="8,6"
+                             FontSize="12"
+                             FontFamily="Segoe UI"
+                             Foreground="#333333"
+                             Background="White"
+                             BorderBrush="#CCCCCC"
+                             BorderThickness="1"
+                             VerticalContentAlignment="Center"
+                             materialDesign:HintAssist.Hint="Search actors and scenes..."
+                             materialDesign:HintAssist.Foreground="#999999">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="TextBox">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    CornerRadius="4">
+                                                <Grid Margin="{TemplateBinding Padding}">
+                                                    <ScrollViewer x:Name="PART_ContentHost"
+                                                                  VerticalAlignment="Center"
+                                                                  HorizontalAlignment="Stretch"
+                                                                  BorderThickness="0"
+                                                                  IsTabStop="False"
+                                                                  Background="Transparent"/>
+                                                </Grid>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsFocused" Value="True">
+                                                    <Setter Property="BorderBrush" Value="#2196F3"/>
+                                                    <Setter Property="BorderThickness" Value="2"/>
+                                                </Trigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="BorderBrush" Value="#999999"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
 
                     <!-- Action Buttons -->
                     <StackPanel Grid.Column="1"
@@ -232,24 +274,27 @@
                         <Button Style="{StaticResource GameEditorToolButtonStyle}"
                                 ToolTip="Refresh Scene Tree"
                                 Command="{Binding RefreshCommand}"
-                                Margin="0,0,4,0"
-                                Padding="8,4">
-                            <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16"/>
+                                Margin="0,0,3,0"
+                                Padding="6,3"
+                                Height="32">
+                            <materialDesign:PackIcon Kind="Refresh" Width="14" Height="14"/>
                         </Button>
 
                         <Button Style="{StaticResource GameEditorToolButtonStyle}"
                                 ToolTip="Expand All"
                                 Click="ExpandAllButton_Click"
-                                Margin="0,0,4,0"
-                                Padding="8,4">
-                            <materialDesign:PackIcon Kind="UnfoldMoreHorizontal" Width="16" Height="16"/>
+                                Margin="0,0,3,0"
+                                Padding="6,3"
+                                Height="32">
+                            <materialDesign:PackIcon Kind="UnfoldMoreHorizontal" Width="14" Height="14"/>
                         </Button>
 
                         <Button Style="{StaticResource GameEditorToolButtonStyle}"
                                 ToolTip="Collapse All"
                                 Click="CollapseAllButton_Click"
-                                Padding="8,4">
-                            <materialDesign:PackIcon Kind="UnfoldLessHorizontal" Width="16" Height="16"/>
+                                Padding="6,3"
+                                Height="32">
+                            <materialDesign:PackIcon Kind="UnfoldLessHorizontal" Width="14" Height="14"/>
                         </Button>
                     </StackPanel>
                 </Grid>

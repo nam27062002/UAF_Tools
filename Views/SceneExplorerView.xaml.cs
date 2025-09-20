@@ -1,22 +1,33 @@
 #nullable enable
 using DANCustomTools.ViewModels;
 using MaterialDesignThemes.Wpf;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace DANCustomTools.Views
 {
     public partial class SceneExplorerView : System.Windows.Controls.UserControl
     {
         private List<SceneTreeItemViewModel>? _originalTreeItems;
+        private DispatcherTimer? _searchTimer;
+        private string _pendingSearchText = string.Empty;
 
         public SceneExplorerView()
         {
             InitializeComponent();
+
+            // Initialize search timer
+            _searchTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(300) // 0.3 seconds delay
+            };
+            _searchTimer.Tick += SearchTimer_Tick;
 
             // Ensure the view can receive keyboard input
             this.Focusable = true;
@@ -238,7 +249,24 @@ namespace DANCustomTools.Views
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             var searchText = ((System.Windows.Controls.TextBox)sender).Text;
-            FilterTreeView(searchText);
+
+            // Store the pending search text
+            _pendingSearchText = searchText ?? string.Empty;
+
+            // Stop the current timer
+            _searchTimer?.Stop();
+
+            // Start the timer for delayed search
+            _searchTimer?.Start();
+        }
+
+        private void SearchTimer_Tick(object? sender, EventArgs e)
+        {
+            // Stop the timer
+            _searchTimer?.Stop();
+
+            // Perform the actual search
+            FilterTreeView(_pendingSearchText);
         }
 
         private void FilterTreeView(string searchText)

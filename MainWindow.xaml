@@ -72,11 +72,6 @@
                                    FontWeight="Bold"
                                        Foreground="White"
                                    VerticalAlignment="Center"/>
-                        <TextBlock Text="UbiArt Framework Development Tools"
-                                   FontSize="12"
-                                   Foreground="White"
-                                   Opacity="0.8"
-                                   Margin="0,2,0,0"/>
                     </StackPanel>
                 </StackPanel>
 
@@ -159,26 +154,6 @@
                                                     <Setter Property="FontWeight" Value="Bold"/>
                                                     <Setter Property="Foreground" Value="#FFFFFF"/>
                                                     <Setter Property="Opacity" Value="1.0"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                                <TextBlock Text="Scene and object editor"
-                                           FontSize="10"
-                                           Foreground="White"
-                                           Opacity="0.8"
-                                           Margin="0,1,0,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="White"/>
-                                            <Setter Property="Opacity" Value="0.8"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEditorActive}" Value="True">
-                                                    <Setter Property="Opacity" Value="1.0"/>
-                                                    <Setter Property="Foreground" Value="#FFFFFF"/>
-                                                    <Setter Property="FontWeight" Value="Medium"/>
-                                                    <Setter Property="FontSize" Value="11"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -270,46 +245,9 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
-                                <TextBlock Text="Process and optimize assets"
-                                           FontSize="10"
-                                           Foreground="White"
-                                           Opacity="0.6"
-                                           Margin="0,1,0,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="White"/>
-                                            <Setter Property="Opacity" Value="0.6"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsAssetsCookerActive}" Value="True">
-                                                    <Setter Property="Opacity" Value="1.0"/>
-                                                    <Setter Property="Foreground" Value="#FFFFFF"/>
-                                                    <Setter Property="FontWeight" Value="Medium"/>
-                                                    <Setter Property="FontSize" Value="11"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
                             </StackPanel>
                             </StackPanel>
                         </Button>
-                    </StackPanel>
-
-                <!-- Version Info -->
-                <StackPanel Grid.Column="2"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Right">
-                        <TextBlock Text="v1.0.0"
-                               FontSize="11"
-                               Foreground="White"
-                               Opacity="0.8"
-                               HorizontalAlignment="Right"/>
-                    <TextBlock Text="UbiArt Framework"
-                                   FontSize="10"
-                               Foreground="White"
-                               Opacity="0.6"
-                               HorizontalAlignment="Right"
-                                   Margin="0,2,0,0"/>
                     </StackPanel>
             </Grid>
         </Border>
