@@ -18,19 +18,129 @@
         <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
-        <!-- Material Design TreeView Item Style -->
+        <!-- Enhanced TreeView Item Style -->
         <Style x:Key="MaterialTreeViewItemStyle" TargetType="TreeViewItem">
             <Setter Property="IsExpanded" Value="True"/>
-            <Setter Property="Padding" Value="4,2"/>
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource MaterialDesignSelection}"/>
-                    <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
-                </Trigger>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource MaterialDesignDivider}"/>
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TreeViewItem">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Expander Button -->
+                            <ToggleButton Grid.Column="0" Grid.Row="0"
+                                          Name="Expander"
+                                          ClickMode="Press"
+                                          IsChecked="{Binding Path=IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
+                                          Width="16" Height="16"
+                                          Margin="0,0,4,0"
+                                          VerticalAlignment="Center"
+                                          Background="Transparent"
+                                          BorderThickness="0">
+                                <ToggleButton.Style>
+                                    <Style TargetType="ToggleButton">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ToggleButton">
+                                                    <Border Background="Transparent" Width="16" Height="16">
+                                                        <materialDesign:PackIcon Kind="ChevronRight"
+                                                                                 Width="12" Height="12"
+                                                                                 HorizontalAlignment="Center"
+                                                                                 VerticalAlignment="Center"
+                                                                                 Foreground="#666666">
+                                                            <materialDesign:PackIcon.RenderTransform>
+                                                                <RotateTransform x:Name="ExpanderRotateTransform" Angle="0"/>
+                                                            </materialDesign:PackIcon.RenderTransform>
+                                                        </materialDesign:PackIcon>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsChecked" Value="True">
+                                                            <Trigger.EnterActions>
+                                                                <BeginStoryboard>
+                                                                    <Storyboard>
+                                                                        <DoubleAnimation Storyboard.TargetName="ExpanderRotateTransform"
+                                                                                         Storyboard.TargetProperty="Angle"
+                                                                                         To="90" Duration="0:0:0.2"/>
+                                                                    </Storyboard>
+                                                                </BeginStoryboard>
+                                                            </Trigger.EnterActions>
+                                                            <Trigger.ExitActions>
+                                                                <BeginStoryboard>
+                                                                    <Storyboard>
+                                                                        <DoubleAnimation Storyboard.TargetName="ExpanderRotateTransform"
+                                                                                         Storyboard.TargetProperty="Angle"
+                                                                                         To="0" Duration="0:0:0.2"/>
+                                                                    </Storyboard>
+                                                                </BeginStoryboard>
+                                                            </Trigger.ExitActions>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ToggleButton.Style>
+                            </ToggleButton>
+
+                            <!-- Content -->
+                            <Border Grid.Column="1" Grid.Row="0"
+                                    Name="ContentBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Padding="{TemplateBinding Padding}"
+                                    CornerRadius="4"
+                                    Margin="0,1">
+                                <ContentPresenter Name="PART_Header"
+                                                  Content="{TemplateBinding Header}"
+                                                  ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                                  HorizontalAlignment="Left"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+
+                            <!-- Children -->
+                            <ItemsPresenter Grid.Column="1" Grid.Row="1"
+                                            Name="ItemsHost"
+                                            Margin="20,0,0,0"/>
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="False">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ContentBorder" Property="Background" Value="#E3F2FD"/>
+                                <Setter TargetName="ContentBorder" Property="BorderBrush" Value="#2196F3"/>
+                                <Setter TargetName="ContentBorder" Property="BorderThickness" Value="1"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ContentBorder" Property="Background" Value="#F5F5F5"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="ContentBorder" Property="Background" Value="#BBDEFB"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Search TextBox Style -->
@@ -98,47 +208,65 @@
             </Border>
 
             <!-- Search Box -->
-            <TextBox Grid.Row="1"
-                     Name="SearchTextBox"
-                     Style="{StaticResource SearchTextBoxStyle}"
-                     TextChanged="SearchTextBox_TextChanged"/>
+            <Border Grid.Row="1"
+                    Background="{DynamicResource MaterialDesignBackground}"
+                    Padding="12,8">
+                <TextBox Name="SearchTextBox"
+                         Style="{StaticResource SearchTextBoxStyle}"
+                         TextChanged="SearchTextBox_TextChanged"
+                         Margin="0"
+                         materialDesign:HintAssist.Hint="Search actors and scenes..."/>
+            </Border>
 
             <!-- Action Buttons -->
-            <WrapPanel Grid.Row="2"
-                       Orientation="Horizontal"
-                       Margin="8,0,8,8">
-                <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                        ToolTip="Refresh Scene Tree"
-                        Command="{Binding RefreshCommand}"
-                        Margin="4,2">
-                    <materialDesign:PackIcon Kind="Refresh" Width="20" Height="20"/>
-                </Button>
+            <Border Grid.Row="2"
+                    Background="{DynamicResource MaterialDesignBackground}"
+                    BorderThickness="0,1,0,1"
+                    BorderBrush="{DynamicResource MaterialDesignDivider}"
+                    Padding="12,8">
+                <WrapPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                            ToolTip="Refresh Scene Tree"
+                            Command="{Binding RefreshCommand}"
+                            Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Refresh" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="11"/>
+                        </StackPanel>
+                    </Button>
 
-                <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                        ToolTip="Expand All"
-                        Click="ExpandAllButton_Click"
-                        Margin="4,2">
-                    <materialDesign:PackIcon Kind="UnfoldMoreHorizontal" Width="20" Height="20"/>
-                </Button>
+                    <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                            ToolTip="Expand All"
+                            Click="ExpandAllButton_Click"
+                            Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="UnfoldMoreHorizontal" Width="16" Height="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Expand All" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="11"/>
+                        </StackPanel>
+                    </Button>
 
-                <Button Style="{StaticResource GameEditorToolButtonStyle}"
-                        ToolTip="Collapse All"
-                        Click="CollapseAllButton_Click"
-                        Margin="4,2">
-                    <materialDesign:PackIcon Kind="UnfoldLessHorizontal" Width="20" Height="20"/>
-                </Button>
-            </WrapPanel>
+                    <Button Style="{StaticResource GameEditorToolButtonStyle}"
+                            ToolTip="Collapse All"
+                            Click="CollapseAllButton_Click"
+                            Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="UnfoldLessHorizontal" Width="16" Height="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Collapse All" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="11"/>
+                        </StackPanel>
+                    </Button>
+                </WrapPanel>
+            </Border>
 
             <!-- Component Filter Section -->
             <Border Grid.Row="3"
-                    Margin="8,0,8,4"
+                    Margin="12,8,12,8"
                     Background="{DynamicResource MaterialDesignBackground}"
-                    CornerRadius="4"
+                    CornerRadius="6"
                     BorderThickness="1"
                     BorderBrush="{DynamicResource MaterialDesignDivider}">
                 <Expander Header="Component Filters"
                           IsExpanded="False"
-                          Padding="8">
+                          Padding="12,8">
                     <Expander.HeaderTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
@@ -190,28 +318,29 @@
                         <ScrollViewer Grid.Row="2"
                                       MaxHeight="200"
                                       VerticalScrollBarVisibility="Auto"
-                                      Padding="0,0,8,0">
+                                      Padding="4">
                             <ItemsControl ItemsSource="{Binding AvailableComponents}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <WrapPanel Orientation="Horizontal"/>
+                                        <WrapPanel Orientation="Horizontal" Margin="4"/>
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <ToggleButton Content="{Binding DisplayText}"
                                                       IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                      Margin="2"
-                                                      Padding="8,4"
-                                                      FontSize="10">
+                                                      Margin="3"
+                                                      Padding="12,6"
+                                                      FontSize="11"
+                                                      FontWeight="Medium"
+                                                      MinWidth="80"
+                                                      MinHeight="28">
                                             <ToggleButton.Style>
                                                 <Style TargetType="ToggleButton">
-                                                    <Setter Property="Background" Value="Transparent"/>
-                                                    <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}"/>
+                                                    <Setter Property="Background" Value="#F5F5F5"/>
+                                                    <Setter Property="Foreground" Value="#333333"/>
+                                                    <Setter Property="BorderBrush" Value="#CCCCCC"/>
                                                     <Setter Property="BorderThickness" Value="1"/>
-                                                    <Setter Property="Padding" Value="8,4"/>
-                                                    <Setter Property="Margin" Value="2"/>
-                                                    <Setter Property="FontSize" Value="10"/>
                                                     <Setter Property="Cursor" Value="Hand"/>
                                                     <Setter Property="Template">
                                                         <Setter.Value>
@@ -219,22 +348,35 @@
                                                                 <Border Background="{TemplateBinding Background}"
                                                                         BorderBrush="{TemplateBinding BorderBrush}"
                                                                         BorderThickness="{TemplateBinding BorderThickness}"
-                                                                        CornerRadius="3"
+                                                                        CornerRadius="4"
                                                                         Padding="{TemplateBinding Padding}">
                                                                     <ContentPresenter HorizontalAlignment="Center"
-                                                                                      VerticalAlignment="Center"/>
+                                                                                      VerticalAlignment="Center"
+                                                                                      TextBlock.Foreground="{TemplateBinding Foreground}"/>
                                                                 </Border>
                                                             </ControlTemplate>
                                                         </Setter.Value>
                                                     </Setter>
                                                     <Style.Triggers>
                                                         <Trigger Property="IsChecked" Value="True">
-                                                            <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                                            <Setter Property="Background" Value="#2196F3"/>
                                                             <Setter Property="Foreground" Value="White"/>
-                                                            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                                            <Setter Property="BorderBrush" Value="#1976D2"/>
                                                         </Trigger>
                                                         <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter Property="Background" Value="{DynamicResource MaterialDesignDivider}"/>
+                                                            <Setter Property="BorderBrush" Value="#999999"/>
+                                                        </Trigger>
+                                                        <MultiTrigger>
+                                                            <MultiTrigger.Conditions>
+                                                                <Condition Property="IsMouseOver" Value="True"/>
+                                                                <Condition Property="IsChecked" Value="True"/>
+                                                            </MultiTrigger.Conditions>
+                                                            <Setter Property="Background" Value="#1976D2"/>
+                                                        </MultiTrigger>
+                                                        <Trigger Property="IsChecked" Value="False">
+                                                            <Setter Property="Background" Value="#FFEBEE"/>
+                                                            <Setter Property="Foreground" Value="#D32F2F"/>
+                                                            <Setter Property="BorderBrush" Value="#FFCDD2"/>
                                                         </Trigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -250,9 +392,11 @@
 
             <!-- Main Tree View -->
             <Border Grid.Row="4"
-                    Margin="8,0,8,8"
+                    Margin="12,0,12,8"
                     Background="{DynamicResource MaterialDesignBackground}"
-                    CornerRadius="4">
+                    CornerRadius="6"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource MaterialDesignDivider}">
                 <Grid>
                     <!-- Empty State -->
                     <StackPanel VerticalAlignment="Center"
@@ -279,6 +423,7 @@
                               ItemsSource="{Binding SceneTreeItems}"
                               Background="Transparent"
                               BorderThickness="0"
+                              Padding="8"
                               VirtualizingStackPanel.IsVirtualizing="False"
                               ScrollViewer.CanContentScroll="False"
                               SelectedItemChanged="TreeView_SelectedItemChanged"
@@ -288,10 +433,11 @@
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                                 <StackPanel Orientation="Horizontal"
-                                            Margin="4,2">
-                                    <!-- Original Item Icon -->
+                                            Margin="2,0">
+                                    <!-- Item Icon -->
                                     <Image Source="{Binding ItemType, Converter={StaticResource TreeItemIconConverter}}"
-                                           Width="16" Height="16" Margin="0,0,4,0"
+                                           Width="18" Height="18"
+                                           Margin="0,0,8,0"
                                            VerticalAlignment="Center"
                                            Stretch="Uniform"
                                            RenderOptions.BitmapScalingMode="HighQuality"/>
@@ -299,7 +445,9 @@
                                     <!-- Item Text -->
                                     <TextBlock Text="{Binding DisplayName}"
                                                VerticalAlignment="Center"
-                                               FontSize="13"/>
+                                               FontSize="13"
+                                               FontWeight="Normal"
+                                               Foreground="#333333"/>
                                 </StackPanel>
                             </HierarchicalDataTemplate>
                         </TreeView.ItemTemplate>
