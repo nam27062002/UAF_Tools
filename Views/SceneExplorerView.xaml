@@ -200,7 +200,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <ToggleButton Content="{Binding DisplayText}"
-                                                      IsChecked="{Binding IsSelected}"
+                                                      IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                       Command="{Binding DataContext.ToggleComponentFilterCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                       CommandParameter="{Binding}"
                                                       Margin="2"
@@ -230,11 +230,11 @@
                                                         </Setter.Value>
                                                     </Setter>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                        <Trigger Property="IsChecked" Value="True">
                                                             <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
                                                             <Setter Property="Foreground" Value="White"/>
                                                             <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
-                                                        </DataTrigger>
+                                                        </Trigger>
                                                         <Trigger Property="IsMouseOver" Value="True">
                                                             <Setter Property="Background" Value="{DynamicResource MaterialDesignDivider}"/>
                                                         </Trigger>

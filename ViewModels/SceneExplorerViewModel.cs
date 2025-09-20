@@ -836,8 +836,13 @@ namespace DANCustomTools.ViewModels
                     LogService.Info($"Removed component filter: {componentModel.ComponentName}");
                 }
 
+                // Notify UI about SelectedComponents change
+                OnPropertyChanged(nameof(SelectedComponents));
+                
                 ApplyComponentFilters();
                 IsComponentFilterEnabled = SelectedComponents.Count > 0;
+                
+                LogService.Info($"Applied filters. Selected components: {SelectedComponents.Count}, Filter enabled: {IsComponentFilterEnabled}");
             }
             catch (Exception ex)
             {
@@ -855,6 +860,10 @@ namespace DANCustomTools.ViewModels
                 }
 
                 SelectedComponents.Clear();
+                
+                // Notify UI about SelectedComponents change
+                OnPropertyChanged(nameof(SelectedComponents));
+                
                 IsComponentFilterEnabled = false;
 
                 // Rebuild scene tree without filters
@@ -895,11 +904,20 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
-                // Find the scene tree items and update their actor groups
-                foreach (var sceneItem in SceneTreeItems)
+                // Ensure we're on the UI thread
+                App.Current?.Dispatcher.Invoke(() =>
                 {
-                    UpdateSceneActorsGroup(sceneItem, actorsToShow);
-                }
+                    // Find the scene tree items and update their actor groups
+                    foreach (var sceneItem in SceneTreeItems)
+                    {
+                        UpdateSceneActorsGroup(sceneItem, actorsToShow);
+                    }
+                    
+                    // Force UI refresh
+                    OnPropertyChanged(nameof(SceneTreeItems));
+                });
+                
+                LogService.Info($"Rebuilt scene tree with {actorsToShow.Count} actors");
             }
             catch (Exception ex)
             {
@@ -918,6 +936,8 @@ namespace DANCustomTools.ViewModels
                 // Get actors that belong to this scene
                 var sceneActors = actorsToShow.Where(a => sceneModel.Actors.Contains(a)).ToList();
 
+                LogService.Info($"Scene '{sceneModel.UniqueName}': Original actors: {sceneModel.Actors.Count}, Filtered actors: {sceneActors.Count}");
+
                 // Update the actors group
                 actorsGroup.Children.Clear();
                 actorsGroup.DisplayName = $"Actors ({sceneActors.Count})";
@@ -931,6 +951,8 @@ namespace DANCustomTools.ViewModels
                         ItemType = SceneTreeItemType.Actor
                     });
                 }
+                
+                LogService.Info($"Updated actors group for scene '{sceneModel.UniqueName}' with {sceneActors.Count} actors");
             }
 
             // Recursively update child scenes
