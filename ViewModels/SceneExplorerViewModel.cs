@@ -118,6 +118,7 @@ namespace DANCustomTools.ViewModels
 
             // Initialize filter commands
             ClearFiltersCommand = new RelayCommand(ClearAllFilters);
+            UnselectAllFiltersCommand = new RelayCommand(UnselectAllFilters);
 
             // Subscribe to service events
             _sceneService.OnlineSceneTreeUpdated += OnOnlineSceneTreeUpdated;
@@ -920,6 +921,39 @@ namespace DANCustomTools.ViewModels
             catch (Exception ex)
             {
                 LogService.Error("Failed to clear component filters", ex);
+            }
+        }
+
+        private void UnselectAllFilters()
+        {
+            try
+            {
+                // Temporarily unsubscribe to avoid triggering events during bulk operation
+                foreach (var component in AvailableComponents)
+                {
+                    component.SelectionChanged -= OnComponentSelectionChanged;
+                    // Deselect all components (hide all actors)
+                    component.IsSelected = false;
+                    component.SelectionChanged += OnComponentSelectionChanged;
+                }
+
+                // Clear SelectedComponents to hide all actors
+                SelectedComponents.Clear();
+                
+                // Notify UI about SelectedComponents change
+                OnPropertyChanged(nameof(SelectedComponents));
+                
+                // No components selected = maximum filtering (hide all)
+                IsComponentFilterEnabled = true;
+
+                // Rebuild scene tree to hide all actors
+                ApplyComponentFilters();
+
+                LogService.Info("Unselected all component filters - no components enabled, hiding all actors");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Failed to unselect all component filters", ex);
             }
         }
 
