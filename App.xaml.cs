@@ -108,8 +108,33 @@ namespace DANCustomTools
 
         protected override void OnExit(ExitEventArgs e)
         {
-            _host?.Dispose();
-            base.OnExit(e);
+            try
+            {
+                // Dispose of the host which will dispose all registered services
+                _host?.Dispose();
+
+                // Clear service provider reference
+                ServiceProvider = null;
+
+                base.OnExit(e);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error during app exit: {ex.Message}");
+            }
+            finally
+            {
+                // Force process termination if still running after 2 seconds
+                System.Threading.Tasks.Task.Run(async () =>
+                {
+                    await System.Threading.Tasks.Task.Delay(2000);
+                    if (!System.Environment.HasShutdownStarted)
+                    {
+                        System.Diagnostics.Debug.WriteLine("Forcing process termination");
+                        System.Environment.Exit(0);
+                    }
+                });
+            }
         }
     }
 }
