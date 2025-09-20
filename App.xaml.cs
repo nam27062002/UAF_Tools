@@ -68,6 +68,9 @@ namespace DANCustomTools
             // Component Management Service (new)
             services.AddSingleton<IComponentManagementService, ComponentManagementService>();
 
+            // Component Filter Service
+            services.AddSingleton<IComponentFilterService, ComponentFilterService>();
+
             // Tool Services
             services.AddSingleton<ISceneExplorerService, SceneExplorerService>();
             services.AddSingleton<IPropertiesEditorService, PropertiesEditorService>();

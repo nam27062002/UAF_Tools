@@ -22,6 +22,7 @@ namespace DANCustomTools.ViewModels
         // Dependencies
         private readonly ISceneExplorerService _sceneService;
         private readonly IPropertiesEditorService _propertiesService;
+        private readonly IComponentFilterService _componentFilterService;
 
         // Arguments
         private readonly string[] _arguments;
@@ -30,6 +31,12 @@ namespace DANCustomTools.ViewModels
         private ObservableCollection<SceneTreeItemViewModel> _sceneTreeItems = new();
         private PropertiesEditorView _propertiesEditor = null!;
         private ObjectWithRefModel? _selectedObject;
+        
+        // Component filtering properties
+        private ObservableCollection<ComponentFilterModel> _availableComponents = new();
+        private HashSet<string> _selectedComponents = new(StringComparer.OrdinalIgnoreCase);
+        private List<ActorModel> _originalActors = new();
+        private bool _isComponentFilterEnabled;
 
         public override string SubToolName => "Scene Explorer";
 
@@ -41,6 +48,10 @@ namespace DANCustomTools.ViewModels
         // Toolbar commands
         public ICommand RefreshCommand { get; }
         public ICommand SelectInEngineCommand { get; }
+        
+        // Component filter commands
+        public ICommand ClearFiltersCommand { get; }
+        public ICommand ToggleComponentFilterCommand { get; }
 
         public ObservableCollection<SceneTreeItemViewModel> SceneTreeItems
         {
@@ -59,17 +70,42 @@ namespace DANCustomTools.ViewModels
             get => _selectedObject;
             private set => SetProperty(ref _selectedObject, value);
         }
+        
+        // Component filtering properties
+        public ObservableCollection<ComponentFilterModel> AvailableComponents
+        {
+            get => _availableComponents;
+            set => SetProperty(ref _availableComponents, value);
+        }
+
+        public HashSet<string> SelectedComponents
+        {
+            get => _selectedComponents;
+            private set => SetProperty(ref _selectedComponents, value);
+        }
+
+        public bool IsComponentFilterEnabled
+        {
+            get => _isComponentFilterEnabled;
+            set => SetProperty(ref _isComponentFilterEnabled, value);
+        }
 
         public SceneExplorerViewModel(
             ILogService logService,
             ISceneExplorerService sceneService,
             IPropertiesEditorService propertiesService,
+            IComponentFilterService componentFilterService,
             IEngineHostService engineHost)
             : base(logService)
         {
             _sceneService = sceneService ?? throw new ArgumentNullException(nameof(sceneService));
             _propertiesService = propertiesService ?? throw new ArgumentNullException(nameof(propertiesService));
+            _componentFilterService = componentFilterService ?? throw new ArgumentNullException(nameof(componentFilterService));
             _arguments = ["--port", "12345"]; // Default arguments
+
+            // Initialize component filtering
+            AvailableComponents = new ObservableCollection<ComponentFilterModel>();
+            SelectedComponents = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             // Initialize context menu commands
             DuplicateCommand = new AsyncRelayCommand(ExecuteDuplicateAsync, CanExecuteDuplicate);
@@ -79,6 +115,10 @@ namespace DANCustomTools.ViewModels
             // Initialize toolbar commands
             RefreshCommand = new AsyncRelayCommand(async () => await RefreshSceneTreeAsync(null));
             SelectInEngineCommand = new AsyncRelayCommand(async () => await SelectInEngineAsync(null), () => SelectedObject != null);
+
+            // Initialize filter commands
+            ClearFiltersCommand = new RelayCommand(ClearAllFilters);
+            ToggleComponentFilterCommand = new RelayCommand<ComponentFilterModel>(ToggleComponentFilter);
 
             // Subscribe to service events
             _sceneService.OnlineSceneTreeUpdated += OnOnlineSceneTreeUpdated;
@@ -179,6 +219,12 @@ namespace DANCustomTools.ViewModels
         {
             App.Current?.Dispatcher.InvokeAsync(() =>
             {
+                // Store original actors for filtering
+                StoreOriginalActors(sceneTree);
+                
+                // Extract and populate component filters
+                ExtractAndPopulateComponents(_originalActors);
+
                 var treeItem = CreateSceneTreeItem(sceneTree);
                 var items = new ObservableCollection<SceneTreeItemViewModel>();
                 items.Add(treeItem);
@@ -209,6 +255,12 @@ namespace DANCustomTools.ViewModels
         {
             App.Current?.Dispatcher.Invoke(() =>
             {
+                // Store original actors from all scenes for filtering
+                StoreOriginalActorsFromScenes(sceneTrees);
+                
+                // Extract and populate component filters
+                ExtractAndPopulateComponents(_originalActors);
+
                 SceneTreeItems.Clear();
                 foreach (var sceneTree in sceneTrees)
                 {
@@ -733,6 +785,185 @@ namespace DANCustomTools.ViewModels
             {
                 LogService.Error($"Failed to rename object '{SelectedObject?.FriendlyName}' to '{newName}'", ex);
                 System.Windows.MessageBox.Show($"Failed to rename object: {ex.Message}", "Rename Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        // Component Filtering Methods
+
+        private void ExtractAndPopulateComponents(List<ActorModel> actors)
+        {
+            try
+            {
+                var allComponents = _componentFilterService.ExtractAllComponents(actors);
+                var componentModels = new List<ComponentFilterModel>();
+
+                foreach (var component in allComponents.OrderBy(c => c))
+                {
+                    var actorCount = actors.Count(a => _componentFilterService.ActorHasAnyComponent(a, new HashSet<string> { component }));
+                    componentModels.Add(new ComponentFilterModel(component, actorCount));
+                }
+
+                AvailableComponents.Clear();
+                foreach (var model in componentModels)
+                {
+                    AvailableComponents.Add(model);
+                }
+
+                LogService.Info($"Populated {AvailableComponents.Count} unique components");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Failed to extract and populate components", ex);
+            }
+        }
+
+        private void ToggleComponentFilter(ComponentFilterModel? componentModel)
+        {
+            if (componentModel == null) return;
+
+            try
+            {
+                componentModel.IsSelected = !componentModel.IsSelected;
+
+                if (componentModel.IsSelected)
+                {
+                    SelectedComponents.Add(componentModel.ComponentName);
+                    LogService.Info($"Added component filter: {componentModel.ComponentName}");
+                }
+                else
+                {
+                    SelectedComponents.Remove(componentModel.ComponentName);
+                    LogService.Info($"Removed component filter: {componentModel.ComponentName}");
+                }
+
+                ApplyComponentFilters();
+                IsComponentFilterEnabled = SelectedComponents.Count > 0;
+            }
+            catch (Exception ex)
+            {
+                LogService.Error($"Failed to toggle component filter for {componentModel.ComponentName}", ex);
+            }
+        }
+
+        private void ClearAllFilters()
+        {
+            try
+            {
+                foreach (var component in AvailableComponents)
+                {
+                    component.IsSelected = false;
+                }
+
+                SelectedComponents.Clear();
+                IsComponentFilterEnabled = false;
+
+                // Rebuild scene tree without filters
+                ApplyComponentFilters();
+
+                LogService.Info("Cleared all component filters");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Failed to clear component filters", ex);
+            }
+        }
+
+        private void ApplyComponentFilters()
+        {
+            try
+            {
+                if (_originalActors.Count == 0 || SelectedComponents.Count == 0)
+                {
+                    // No filters applied, rebuild with all actors
+                    RebuildSceneTreeWithActors(_originalActors);
+                    return;
+                }
+
+                // Filter actors based on selected components
+                var filteredActors = _componentFilterService.FilterActorsByComponents(_originalActors, SelectedComponents);
+                RebuildSceneTreeWithActors(filteredActors);
+
+                LogService.Info($"Applied component filters: {SelectedComponents.Count} components selected, {filteredActors.Count} actors shown");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Failed to apply component filters", ex);
+            }
+        }
+
+        private void RebuildSceneTreeWithActors(List<ActorModel> actorsToShow)
+        {
+            try
+            {
+                // Find the scene tree items and update their actor groups
+                foreach (var sceneItem in SceneTreeItems)
+                {
+                    UpdateSceneActorsGroup(sceneItem, actorsToShow);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Failed to rebuild scene tree with filtered actors", ex);
+            }
+        }
+
+        private void UpdateSceneActorsGroup(SceneTreeItemViewModel sceneItem, List<ActorModel> actorsToShow)
+        {
+            if (sceneItem.Model is not SceneTreeModel sceneModel) return;
+
+            // Find the actors group in this scene
+            var actorsGroup = sceneItem.Children.FirstOrDefault(c => c.ItemType == SceneTreeItemType.ActorSet);
+            if (actorsGroup != null)
+            {
+                // Get actors that belong to this scene
+                var sceneActors = actorsToShow.Where(a => sceneModel.Actors.Contains(a)).ToList();
+
+                // Update the actors group
+                actorsGroup.Children.Clear();
+                actorsGroup.DisplayName = $"Actors ({sceneActors.Count})";
+
+                foreach (var actor in sceneActors)
+                {
+                    actorsGroup.Children.Add(new SceneTreeItemViewModel
+                    {
+                        DisplayName = actor.FriendlyName,
+                        Model = actor,
+                        ItemType = SceneTreeItemType.Actor
+                    });
+                }
+            }
+
+            // Recursively update child scenes
+            foreach (var childScene in sceneItem.Children.Where(c => c.ItemType == SceneTreeItemType.Scene))
+            {
+                UpdateSceneActorsGroup(childScene, actorsToShow);
+            }
+        }
+
+        
+        private void StoreOriginalActors(SceneTreeModel sceneTree)
+        {
+            _originalActors.Clear();
+            CollectActorsFromScene(sceneTree, _originalActors);
+            LogService.Info($"Stored {_originalActors.Count} original actors from scene tree");
+        }
+
+        private void StoreOriginalActorsFromScenes(List<SceneTreeModel> sceneTrees)
+        {
+            _originalActors.Clear();
+            foreach (var scene in sceneTrees)
+            {
+                CollectActorsFromScene(scene, _originalActors);
+            }
+            LogService.Info($"Stored {_originalActors.Count} original actors from {sceneTrees.Count} scenes");
+        }
+
+        private void CollectActorsFromScene(SceneTreeModel scene, List<ActorModel> actors)
+        {
+            actors.AddRange(scene.Actors);
+            foreach (var childScene in scene.ChildScenes)
+            {
+                CollectActorsFromScene(childScene, actors);
             }
         }
 
