@@ -42,11 +42,25 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <MenuItem Header="Tools" FontSize="14" Padding="12,6">
+                <MenuItem Header="TeaBox"
+                          Command="{Binding LaunchTeaBoxCommand}"
+                          Icon="{materialDesign:PackIcon Kind=Hammer,Size=16}">
+                    <MenuItem.ToolTip>
+                        <ToolTip Content="Launch TeaBox build automation tool"/>
+                    </MenuItem.ToolTip>
+                </MenuItem>
+            </MenuItem>
+        </Menu>
+
         <!-- Header with Navigation -->
-        <Border Grid.Row="0"
+        <Border Grid.Row="1"
                 Background="{StaticResource GameEditorHeaderBrush}"
                 Padding="20,8">
             <Border.Effect>
@@ -253,7 +267,7 @@
         </Border>
 
         <!-- Main Content Area -->
-        <ContentControl Grid.Row="1"
+        <ContentControl Grid.Row="2"
                         Content="{Binding CurrentToolViewModel}"
                         Margin="0"/>
     </Grid>

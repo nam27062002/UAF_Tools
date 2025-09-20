@@ -3,6 +3,9 @@ using DANCustomTools.Core.Abstractions;
 using DANCustomTools.MVVM;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Windows;
 using System.Windows.Input;
 
 namespace DANCustomTools.ViewModels
@@ -45,12 +48,14 @@ namespace DANCustomTools.ViewModels
 
         public ICommand SwitchToEditorCommand { get; }
         public ICommand SwitchToAssetsCookerCommand { get; }
+        public ICommand LaunchTeaBoxCommand { get; }
 
         public MainViewModel(IToolManager toolManager)
         {
             _toolManager = toolManager ?? throw new ArgumentNullException(nameof(toolManager));
             SwitchToEditorCommand = new RelayCommand(() => SwitchToMainTool("Editor"), () => !IsEditorActive);
             SwitchToAssetsCookerCommand = new RelayCommand(() => SwitchToMainTool("AssetsCooker"), () => !IsAssetsCookerActive);
+            LaunchTeaBoxCommand = new RelayCommand(LaunchTeaBox);
 
             // Subscribe to tool manager events
             _toolManager.CurrentMainToolChanged += OnCurrentMainToolChanged;
@@ -113,6 +118,47 @@ namespace DANCustomTools.ViewModels
             System.Diagnostics.Debug.WriteLine($"[MainViewModel] OnCurrentMainToolChanged - Tool: {mainTool?.Name ?? "null"}");
             CurrentToolViewModel = mainTool?.CreateMainViewModel();
             System.Diagnostics.Debug.WriteLine($"[MainViewModel] CurrentToolViewModel created: {CurrentToolViewModel?.GetType().Name ?? "null"}");
+        }
+
+        private void LaunchTeaBox()
+        {
+            try
+            {
+                // Get the current application directory
+                string currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+                // Navigate to the TeaBox directory (../Teabox/TeaBox.exe)
+                string teaBoxPath = Path.Combine(currentDirectory, "..", "Teabox", "TeaBox.exe");
+                teaBoxPath = Path.GetFullPath(teaBoxPath); // Resolve relative path
+
+                if (File.Exists(teaBoxPath))
+                {
+                    var startInfo = new ProcessStartInfo
+                    {
+                        FileName = teaBoxPath,
+                        UseShellExecute = true // Use shell execute to launch the executable properly
+                    };
+
+                    Process.Start(startInfo);
+                    System.Diagnostics.Debug.WriteLine($"[MainViewModel] Launched TeaBox from: {teaBoxPath}");
+                }
+                else
+                {
+                    MessageBox.Show($"TeaBox executable not found at: {teaBoxPath}",
+                                  "TeaBox Not Found",
+                                  MessageBoxButton.OK,
+                                  MessageBoxImage.Warning);
+                    System.Diagnostics.Debug.WriteLine($"[MainViewModel] TeaBox not found at: {teaBoxPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to launch TeaBox: {ex.Message}",
+                              "Launch Error",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Error);
+                System.Diagnostics.Debug.WriteLine($"[MainViewModel] Error launching TeaBox: {ex.Message}");
+            }
         }
 
         public override void Dispose()
