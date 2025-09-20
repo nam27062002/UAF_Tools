@@ -51,6 +51,7 @@ namespace DANCustomTools.ViewModels
         
         // Component filter commands
         public ICommand ClearFiltersCommand { get; }
+        public ICommand UnselectAllFiltersCommand { get; }
 
         public ObservableCollection<SceneTreeItemViewModel> SceneTreeItems
         {
