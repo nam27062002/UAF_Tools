@@ -800,6 +800,9 @@ namespace DANCustomTools.ViewModels
                     var actorCount = actors.Count(a => _componentFilterService.ActorHasAnyComponent(a, new HashSet<string> { component }));
                     var model = new ComponentFilterModel(component, actorCount);
                     
+                    // Default to selected (all components shown by default)
+                    model.IsSelected = true;
+                    
                     // Subscribe to selection changes
                     model.SelectionChanged += OnComponentSelectionChanged;
                     
@@ -812,13 +815,23 @@ namespace DANCustomTools.ViewModels
                     oldModel.SelectionChanged -= OnComponentSelectionChanged;
                 }
 
+                // Initialize SelectedComponents with all components (default state)
+                SelectedComponents.Clear();
+                foreach (var component in allComponents)
+                {
+                    SelectedComponents.Add(component);
+                }
+
                 AvailableComponents.Clear();
                 foreach (var model in componentModels)
                 {
                     AvailableComponents.Add(model);
                 }
 
-                LogService.Info($"Populated {AvailableComponents.Count} unique components");
+                // Default to no filtering (all components selected = show all actors)
+                IsComponentFilterEnabled = false;
+
+                LogService.Info($"Populated {AvailableComponents.Count} unique components (all selected by default)");
             }
             catch (Exception ex)
             {
@@ -836,18 +849,20 @@ namespace DANCustomTools.ViewModels
             {
                 if (isSelected)
                 {
+                    // Component is re-selected (actors with this component will be shown again)
                     if (!SelectedComponents.Contains(componentModel.ComponentName))
                     {
                         SelectedComponents.Add(componentModel.ComponentName);
-                        LogService.Info($"Added component filter: {componentModel.ComponentName}");
+                        LogService.Info($"Re-enabled component: {componentModel.ComponentName}");
                     }
                 }
                 else
                 {
+                    // Component is deselected (hide actors with this component)
                     if (SelectedComponents.Contains(componentModel.ComponentName))
                     {
                         SelectedComponents.Remove(componentModel.ComponentName);
-                        LogService.Info($"Removed component filter: {componentModel.ComponentName}");
+                        LogService.Info($"Disabled component filter: {componentModel.ComponentName}");
                     }
                 }
 
@@ -855,10 +870,14 @@ namespace DANCustomTools.ViewModels
                 OnPropertyChanged(nameof(SelectedComponents));
                 
                 ApplyComponentFilters();
-                IsComponentFilterEnabled = SelectedComponents.Count > 0;
                 
-                LogService.Info($"Applied filters. Selected components: {SelectedComponents.Count}, Filter enabled: {IsComponentFilterEnabled}");
-                LogService.Info($"Selected components: [{string.Join(", ", SelectedComponents)}]");
+                // Enable filtering when not all components are selected
+                var totalComponents = AvailableComponents.Count;
+                var selectedCount = SelectedComponents.Count;
+                IsComponentFilterEnabled = selectedCount < totalComponents;
+                
+                LogService.Info($"Component filtering: {selectedCount}/{totalComponents} components enabled, Filter active: {IsComponentFilterEnabled}");
+                LogService.Info($"Enabled components: [{string.Join(", ", SelectedComponents)}]");
             }
             catch (Exception ex)
             {
@@ -870,25 +889,32 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
-                // Temporarily unsubscribe to avoid triggering events during bulk clear
+                // Temporarily unsubscribe to avoid triggering events during bulk operation
                 foreach (var component in AvailableComponents)
                 {
                     component.SelectionChanged -= OnComponentSelectionChanged;
-                    component.IsSelected = false;
+                    // Select all components (default state = show all actors)
+                    component.IsSelected = true;
                     component.SelectionChanged += OnComponentSelectionChanged;
                 }
 
+                // Reset SelectedComponents to contain all components
                 SelectedComponents.Clear();
+                foreach (var component in AvailableComponents)
+                {
+                    SelectedComponents.Add(component.ComponentName);
+                }
                 
                 // Notify UI about SelectedComponents change
                 OnPropertyChanged(nameof(SelectedComponents));
                 
+                // All components selected = no filtering
                 IsComponentFilterEnabled = false;
 
-                // Rebuild scene tree without filters
+                // Rebuild scene tree to show all actors
                 ApplyComponentFilters();
 
-                LogService.Info("Cleared all component filters");
+                LogService.Info("Reset all component filters - all components enabled, showing all actors");
             }
             catch (Exception ex)
             {
@@ -900,18 +926,57 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
-                if (_originalActors.Count == 0 || SelectedComponents.Count == 0)
+                if (_originalActors.Count == 0)
                 {
-                    // No filters applied, rebuild with all actors
-                    RebuildSceneTreeWithActors(_originalActors);
+                    LogService.Warning("No original actors to filter");
                     return;
                 }
 
-                // Filter actors based on selected components
-                var filteredActors = _componentFilterService.FilterActorsByComponents(_originalActors, SelectedComponents);
+                var totalComponents = AvailableComponents.Count;
+                var selectedComponents = SelectedComponents.Count;
+
+                if (selectedComponents == totalComponents)
+                {
+                    // All components are selected, show all actors
+                    RebuildSceneTreeWithActors(_originalActors);
+                    LogService.Info($"All components selected, showing all {_originalActors.Count} actors");
+                    return;
+                }
+
+                if (selectedComponents == 0)
+                {
+                    // No components selected, hide all actors
+                    RebuildSceneTreeWithActors(new List<ActorModel>());
+                    LogService.Info("No components selected, hiding all actors");
+                    return;
+                }
+
+                // Filter actors: Show only actors that DON'T have any of the DESELECTED components
+                var deselectedComponents = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var component in AvailableComponents)
+                {
+                    if (!component.IsSelected)
+                    {
+                        deselectedComponents.Add(component.ComponentName);
+                    }
+                }
+
+                var filteredActors = new List<ActorModel>();
+                foreach (var actor in _originalActors)
+                {
+                    // Show actor only if it doesn't have any deselected components
+                    bool hasDeselectedComponent = _componentFilterService.ActorHasAnyComponent(actor, deselectedComponents);
+                    if (!hasDeselectedComponent)
+                    {
+                        filteredActors.Add(actor);
+                    }
+                }
+
                 RebuildSceneTreeWithActors(filteredActors);
 
-                LogService.Info($"Applied component filters: {SelectedComponents.Count} components selected, {filteredActors.Count} actors shown");
+                LogService.Info($"Applied component filters: {selectedComponents}/{totalComponents} components enabled");
+                LogService.Info($"Deselected components: [{string.Join(", ", deselectedComponents)}]");
+                LogService.Info($"Filtered actors: {filteredActors.Count}/{_originalActors.Count} actors shown");
             }
             catch (Exception ex)
             {
