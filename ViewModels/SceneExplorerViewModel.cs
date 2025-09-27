@@ -1224,8 +1224,10 @@ namespace DANCustomTools.ViewModels
                 // Default to no filtering (all components selected = show all actors)
                 IsComponentFilterEnabled = false;
 
-                // Notify UI that HasComponents might have changed
+                // Notify UI that HasComponents and SelectedComponentsCount have changed
                 OnPropertyChanged(nameof(HasComponents));
+                OnPropertyChanged(nameof(SelectedComponents));
+                OnPropertyChanged(nameof(SelectedComponentsCount));
 
                 LogService.Info($"Populated {AvailableComponents.Count} unique components (all selected by default)");
             }
