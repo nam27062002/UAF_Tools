@@ -17,6 +17,13 @@ using System.Windows.Input;
 
 namespace DANCustomTools.ViewModels
 {
+    public enum ObjectTypeFilter
+    {
+        All,
+        ActorsOnly,
+        FrisesOnly
+    }
+
     public class SceneExplorerViewModel : SubToolViewModelBase, IDisposable
     {
         // Dependencies
@@ -42,6 +49,9 @@ namespace DANCustomTools.ViewModels
         private DateTime _lastSelectionRequestTime = DateTime.MinValue;
         private readonly TimeSpan _selectionRequestThrottleInterval = TimeSpan.FromMilliseconds(1000); // 1 second minimum between requests
 
+        // Object type filtering
+        private ObjectTypeFilter _currentObjectTypeFilter = ObjectTypeFilter.All;
+
         public override string SubToolName => "Scene Explorer";
 
         // Context menu commands
@@ -56,6 +66,11 @@ namespace DANCustomTools.ViewModels
         // Component filter commands
         public ICommand ClearFiltersCommand { get; }
         public ICommand UnselectAllFiltersCommand { get; }
+
+        // Object type filter commands
+        public ICommand ShowAllObjectsCommand { get; }
+        public ICommand ShowActorsOnlyCommand { get; }
+        public ICommand ShowFrisesOnlyCommand { get; }
 
         public ObservableCollection<SceneTreeItemViewModel> SceneTreeItems
         {
@@ -98,6 +113,16 @@ namespace DANCustomTools.ViewModels
             get => AvailableComponents.Count > 0;
         }
 
+        public ObjectTypeFilter CurrentObjectTypeFilter
+        {
+            get => _currentObjectTypeFilter;
+            private set => SetProperty(ref _currentObjectTypeFilter, value);
+        }
+
+        public bool IsShowingAll => CurrentObjectTypeFilter == ObjectTypeFilter.All;
+        public bool IsShowingActorsOnly => CurrentObjectTypeFilter == ObjectTypeFilter.ActorsOnly;
+        public bool IsShowingFrisesOnly => CurrentObjectTypeFilter == ObjectTypeFilter.FrisesOnly;
+
         public SceneExplorerViewModel(
             ILogService logService,
             ISceneExplorerService sceneService,
@@ -127,6 +152,11 @@ namespace DANCustomTools.ViewModels
             // Initialize filter commands
             ClearFiltersCommand = new RelayCommand(ClearAllFilters);
             UnselectAllFiltersCommand = new RelayCommand(UnselectAllFilters);
+
+            // Initialize object type filter commands
+            ShowAllObjectsCommand = new RelayCommand(() => SetObjectTypeFilter(ObjectTypeFilter.All));
+            ShowActorsOnlyCommand = new RelayCommand(() => SetObjectTypeFilter(ObjectTypeFilter.ActorsOnly));
+            ShowFrisesOnlyCommand = new RelayCommand(() => SetObjectTypeFilter(ObjectTypeFilter.FrisesOnly));
 
             // Subscribe to service events
             _sceneService.OnlineSceneTreeUpdated += OnOnlineSceneTreeUpdated;
@@ -415,6 +445,299 @@ namespace DANCustomTools.ViewModels
             _lastSelectionRequestTime = now;
             LogService.Info("Sending throttled RequestCurrentSelection");
             _sceneService.RequestCurrentSelection();
+        }
+
+        private void SetObjectTypeFilter(ObjectTypeFilter filter)
+        {
+            if (CurrentObjectTypeFilter == filter) return;
+
+            CurrentObjectTypeFilter = filter;
+            
+            // Notify UI about property changes
+            OnPropertyChanged(nameof(IsShowingAll));
+            OnPropertyChanged(nameof(IsShowingActorsOnly));
+            OnPropertyChanged(nameof(IsShowingFrisesOnly));
+
+            // Apply the object type filter
+            ApplyObjectTypeFilter();
+
+            LogService.Info($"Object type filter changed to: {filter}");
+        }
+
+        private void ApplyObjectTypeFilter()
+        {
+            try
+            {
+                // Apply object type filter to each scene in the tree
+                foreach (var sceneItem in SceneTreeItems)
+                {
+                    ApplyObjectTypeFilterToScene(sceneItem);
+                }
+                
+                // Force UI refresh
+                OnPropertyChanged(nameof(SceneTreeItems));
+                
+                LogService.Info($"Applied object type filter: {CurrentObjectTypeFilter}");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Failed to apply object type filter", ex);
+            }
+        }
+
+        private void ApplyObjectTypeFilterToScene(SceneTreeItemViewModel sceneItem)
+        {
+            if (sceneItem.Model is not SceneTreeModel sceneModel) return;
+
+            // Find actors and frises groups
+            var actorsGroup = sceneItem.Children.FirstOrDefault(c => c.ItemType == SceneTreeItemType.ActorSet);
+            var frisesGroup = sceneItem.Children.FirstOrDefault(c => c.ItemType == SceneTreeItemType.FriseSet);
+
+            bool hasVisibleContent = false;
+
+            switch (CurrentObjectTypeFilter)
+            {
+                case ObjectTypeFilter.All:
+                    // Show both actors and frises groups
+                    if (actorsGroup != null && sceneModel.Actors.Count > 0) 
+                    {
+                        SetGroupVisibility(actorsGroup, true);
+                        hasVisibleContent = true;
+                    }
+                    else if (actorsGroup != null)
+                    {
+                        SetGroupVisibility(actorsGroup, false);
+                    }
+
+                    if (frisesGroup != null && sceneModel.Frises.Count > 0) 
+                    {
+                        SetGroupVisibility(frisesGroup, true);
+                        hasVisibleContent = true;
+                    }
+                    else if (frisesGroup != null)
+                    {
+                        SetGroupVisibility(frisesGroup, false);
+                    }
+                    break;
+
+                case ObjectTypeFilter.ActorsOnly:
+                    // Show only actors group if it has items
+                    if (actorsGroup != null && sceneModel.Actors.Count > 0) 
+                    {
+                        SetGroupVisibility(actorsGroup, true);
+                        hasVisibleContent = true;
+                    }
+                    else if (actorsGroup != null)
+                    {
+                        SetGroupVisibility(actorsGroup, false);
+                    }
+
+                    // Always hide frises
+                    if (frisesGroup != null) SetGroupVisibility(frisesGroup, false);
+                    break;
+
+                case ObjectTypeFilter.FrisesOnly:
+                    // Show only frises group if it has items
+                    if (frisesGroup != null && sceneModel.Frises.Count > 0) 
+                    {
+                        SetGroupVisibility(frisesGroup, true);
+                        hasVisibleContent = true;
+                    }
+                    else if (frisesGroup != null)
+                    {
+                        SetGroupVisibility(frisesGroup, false);
+                    }
+
+                    // Always hide actors
+                    if (actorsGroup != null) SetGroupVisibility(actorsGroup, false);
+                    break;
+            }
+
+            // Recursively apply to child scenes and check if any child has visible content
+            foreach (var childScene in sceneItem.Children.Where(c => c.ItemType == SceneTreeItemType.Scene).ToList())
+            {
+                ApplyObjectTypeFilterToScene(childScene);
+                
+                // Check if child scene has any visible groups
+                var childHasContent = HasVisibleGroups(childScene);
+                if (childHasContent)
+                {
+                    hasVisibleContent = true;
+                }
+                else
+                {
+                    // Hide child scene if it has no visible content
+                    SetSceneVisibility(childScene, false);
+                }
+            }
+
+            // Set visibility of this scene based on whether it has visible content
+            if (sceneItem.Model is SceneTreeModel) // Don't hide root scenes in SceneTreeItems collection
+            {
+                SetSceneVisibility(sceneItem, hasVisibleContent);
+            }
+        }
+
+        private bool HasVisibleGroups(SceneTreeItemViewModel sceneItem)
+        {
+            // Check if this scene has any visible actors or frises groups
+            var actorsGroup = sceneItem.Children.FirstOrDefault(c => c.ItemType == SceneTreeItemType.ActorSet);
+            var frisesGroup = sceneItem.Children.FirstOrDefault(c => c.ItemType == SceneTreeItemType.FriseSet);
+
+            bool hasVisibleGroups = false;
+            
+            if (actorsGroup != null && sceneItem.Children.Contains(actorsGroup))
+                hasVisibleGroups = true;
+            
+            if (frisesGroup != null && sceneItem.Children.Contains(frisesGroup))
+                hasVisibleGroups = true;
+
+            // Also check child scenes recursively
+            foreach (var childScene in sceneItem.Children.Where(c => c.ItemType == SceneTreeItemType.Scene))
+            {
+                if (HasVisibleGroups(childScene))
+                {
+                    hasVisibleGroups = true;
+                    break;
+                }
+            }
+
+            return hasVisibleGroups;
+        }
+
+        private void SetSceneVisibility(SceneTreeItemViewModel sceneItem, bool isVisible)
+        {
+            // Find the parent that contains this scene
+            var parentScene = FindParentSceneForScene(sceneItem);
+            if (parentScene == null) return; // Root level scenes are always visible
+
+            if (isVisible)
+            {
+                // Ensure the scene is in the parent's children collection
+                if (!parentScene.Children.Contains(sceneItem))
+                {
+                    // Insert scene at the beginning (scenes should come first)
+                    int insertIndex = 0;
+                    parentScene.Children.Insert(insertIndex, sceneItem);
+                }
+            }
+            else
+            {
+                // Remove the scene from the parent's children collection
+                if (parentScene.Children.Contains(sceneItem))
+                {
+                    parentScene.Children.Remove(sceneItem);
+                }
+            }
+        }
+
+        private SceneTreeItemViewModel? FindParentSceneForScene(SceneTreeItemViewModel targetScene)
+        {
+            // Search through all scenes to find which one contains this child scene
+            foreach (var sceneItem in SceneTreeItems)
+            {
+                var foundParent = FindParentSceneForSceneRecursive(sceneItem, targetScene);
+                if (foundParent != null) return foundParent;
+            }
+            return null;
+        }
+
+        private SceneTreeItemViewModel? FindParentSceneForSceneRecursive(SceneTreeItemViewModel currentScene, SceneTreeItemViewModel targetScene)
+        {
+            // Check if this scene directly contains the target scene
+            if (currentScene.Children.Contains(targetScene))
+            {
+                return currentScene;
+            }
+
+            // Recursively check child scenes
+            foreach (var childScene in currentScene.Children.Where(c => c.ItemType == SceneTreeItemType.Scene))
+            {
+                var foundParent = FindParentSceneForSceneRecursive(childScene, targetScene);
+                if (foundParent != null) return foundParent;
+            }
+
+            return null;
+        }
+
+        private void SetGroupVisibility(SceneTreeItemViewModel groupItem, bool isVisible)
+        {
+            // Find the parent scene that contains this group
+            var parentScene = FindParentSceneForGroup(groupItem);
+            if (parentScene == null) return;
+            
+            if (isVisible)
+            {
+                // Ensure the group is in the parent scene's children collection
+                if (!parentScene.Children.Contains(groupItem))
+                {
+                    // Find the correct position to insert based on item type order
+                    int insertIndex = GetInsertIndexForGroup(parentScene.Children, groupItem.ItemType);
+                    parentScene.Children.Insert(insertIndex, groupItem);
+                }
+            }
+            else
+            {
+                // Remove the group from the parent scene's children collection
+                if (parentScene.Children.Contains(groupItem))
+                {
+                    parentScene.Children.Remove(groupItem);
+                }
+            }
+        }
+
+        private SceneTreeItemViewModel? FindParentSceneForGroup(SceneTreeItemViewModel groupItem)
+        {
+            // Search through all scenes to find which one contains this group
+            foreach (var sceneItem in SceneTreeItems)
+            {
+                var foundParent = FindParentSceneRecursive(sceneItem, groupItem);
+                if (foundParent != null) return foundParent;
+            }
+            return null;
+        }
+
+        private SceneTreeItemViewModel? FindParentSceneRecursive(SceneTreeItemViewModel currentScene, SceneTreeItemViewModel targetGroup)
+        {
+            // Check if this scene directly contains the target group
+            if (currentScene.Children.Contains(targetGroup))
+            {
+                return currentScene;
+            }
+
+            // Recursively check child scenes
+            foreach (var childScene in currentScene.Children.Where(c => c.ItemType == SceneTreeItemType.Scene))
+            {
+                var foundParent = FindParentSceneRecursive(childScene, targetGroup);
+                if (foundParent != null) return foundParent;
+            }
+
+            return null;
+        }
+
+        private int GetInsertIndexForGroup(ObservableCollection<SceneTreeItemViewModel> children, SceneTreeItemType groupType)
+        {
+            // Insert order: child scenes first, then actors, then frises
+            if (groupType == SceneTreeItemType.ActorSet)
+            {
+                // Insert actors after any child scenes but before frises
+                var lastSceneIndex = -1;
+                for (int i = 0; i < children.Count; i++)
+                {
+                    if (children[i].ItemType == SceneTreeItemType.Scene)
+                        lastSceneIndex = i;
+                    else if (children[i].ItemType == SceneTreeItemType.FriseSet)
+                        return i; // Insert before frises
+                }
+                return lastSceneIndex + 1; // Insert after last scene
+            }
+            else if (groupType == SceneTreeItemType.FriseSet)
+            {
+                // Insert frises at the end
+                return children.Count;
+            }
+            
+            return children.Count; // Default: insert at end
         }
 
         private void ClearTreeSelection(ObservableCollection<SceneTreeItemViewModel> items)
