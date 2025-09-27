@@ -26,6 +26,5 @@ namespace DANCustomTools.Services
         void DuplicateAndMoveObject(uint objectRef, float dx, float dy, float dz);
         void RequestSceneTree();
         void RequestOfflineSceneTrees(string path);
-        void RequestCurrentSelection();
     }
 }

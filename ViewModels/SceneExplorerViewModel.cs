@@ -45,10 +45,6 @@ namespace DANCustomTools.ViewModels
         private List<ActorModel> _originalActors = new();
         private bool _isComponentFilterEnabled;
 
-        // Selection request throttling
-        private DateTime _lastSelectionRequestTime = DateTime.MinValue;
-        private readonly TimeSpan _selectionRequestThrottleInterval = TimeSpan.FromMilliseconds(1000); // 1 second minimum between requests
-
         // Object type filtering
         private ObjectTypeFilter _currentObjectTypeFilter = ObjectTypeFilter.All;
 
@@ -230,19 +226,6 @@ namespace DANCustomTools.ViewModels
                     LogService.Info("Services already connected, requesting scene tree");
                     _sceneService.RequestSceneTree();
 
-                    // Also request current selection to sync with Engine
-                    _ = Task.Delay(500).ContinueWith(_ =>
-                    {
-                        try
-                        {
-                            LogService.Info("Requesting current selection from Engine");
-                            RequestCurrentSelectionThrottled();
-                        }
-                        catch (Exception ex)
-                        {
-                            LogService.Error("Failed to request current selection", ex);
-                        }
-                    });
                 }
             }
             catch (Exception ex)
@@ -270,22 +253,6 @@ namespace DANCustomTools.ViewModels
                 LogService.Info($"Updated scene tree: {sceneTree.UniqueName}");
                 LogService.Info($"SceneTreeItems.Count={SceneTreeItems.Count}");
 
-                // Request current selection after scene tree is loaded
-                _ = Task.Delay(300).ContinueWith(_ =>
-                {
-                    try
-                    {
-                        if (_sceneService.IsConnected)
-                        {
-                            LogService.Info("Requesting current selection after scene tree update");
-                            RequestCurrentSelectionThrottled();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogService.Error("Failed to request current selection after scene tree update", ex);
-                    }
-                });
             }, System.Windows.Threading.DispatcherPriority.Render);
         }
 
@@ -431,21 +398,6 @@ namespace DANCustomTools.ViewModels
             IsConnected = _sceneService.IsConnected;
         }
 
-        private void RequestCurrentSelectionThrottled()
-        {
-            var now = DateTime.Now;
-            var timeSinceLastRequest = now - _lastSelectionRequestTime;
-            
-            if (timeSinceLastRequest < _selectionRequestThrottleInterval)
-            {
-                LogService.Info($"Throttling RequestCurrentSelection - last request was {timeSinceLastRequest.TotalMilliseconds:F0}ms ago (min interval: {_selectionRequestThrottleInterval.TotalMilliseconds}ms)");
-                return;
-            }
-            
-            _lastSelectionRequestTime = now;
-            LogService.Info("Sending throttled RequestCurrentSelection");
-            _sceneService.RequestCurrentSelection();
-        }
 
         private void SetObjectTypeFilter(ObjectTypeFilter filter)
         {

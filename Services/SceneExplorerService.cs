@@ -82,13 +82,6 @@ namespace DANCustomTools.Services
             _offlineSceneTreePath = path;
         }
 
-        public void RequestCurrentSelection()
-        {
-            if (IsConnected && Plugin != null)
-            {
-                SendCurrentSelectionRequest();
-            }
-        }
 
 
 
@@ -340,11 +333,6 @@ namespace DANCustomTools.Services
             SendMessage(blob => blob.push("SendSceneTree"));
         }
 
-        private void SendCurrentSelectionRequest()
-        {
-            LogService.Info("Sending 'SendCurrentSelection' request to Engine");
-            SendMessage(blob => blob.push("SendCurrentSelection"));
-        }
 
         private void SendOfflineSceneTreeRequest(string path)
         {
