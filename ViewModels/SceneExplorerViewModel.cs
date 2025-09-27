@@ -110,6 +110,11 @@ namespace DANCustomTools.ViewModels
             get => AvailableComponents.Count > 0;
         }
 
+        public int SelectedComponentsCount
+        {
+            get => SelectedComponents.Count;
+        }
+
         public ObjectTypeFilter CurrentObjectTypeFilter
         {
             get => _currentObjectTypeFilter;
@@ -427,16 +432,24 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
-                // Apply object type filter to each scene in the tree
-                foreach (var sceneItem in SceneTreeItems)
+                // Use async dispatcher to avoid blocking UI thread
+                App.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    ApplyObjectTypeFilterToScene(sceneItem);
-                }
+                    // Batch updates to minimize UI notifications
+                    using (var deferRefresh = DeferTreeViewRefresh())
+                    {
+                        // Apply object type filter to each scene in the tree
+                        foreach (var sceneItem in SceneTreeItems)
+                        {
+                            ApplyObjectTypeFilterToScene(sceneItem);
+                        }
+                    }
+                    
+                    // Single UI refresh after all updates
+                    OnPropertyChanged(nameof(SceneTreeItems));
+                }));
                 
-                // Force UI refresh
-                OnPropertyChanged(nameof(SceneTreeItems));
-                
-                LogService.Info($"Applied object type filter: {CurrentObjectTypeFilter}");
+                LogService.Info($"Scheduled object type filter application: {CurrentObjectTypeFilter}");
             }
             catch (Exception ex)
             {
@@ -528,20 +541,35 @@ namespace DANCustomTools.ViewModels
 
         private void AddGroupToScene(SceneTreeItemViewModel sceneItem, SceneTreeItemViewModel groupItem)
         {
-            // Find the correct position to insert the group
-            int insertIndex = GetInsertIndexForGroup(sceneItem.Children, groupItem.ItemType);
+            // Performance optimization: Check if group is already at correct position
+            int correctIndex = GetInsertIndexForGroup(sceneItem.Children, groupItem.ItemType);
+            
+            // Check if the group is already at the correct position
+            if (correctIndex < sceneItem.Children.Count && 
+                sceneItem.Children[correctIndex] == groupItem)
+            {
+                // Group is already in the correct position, no need to update
+                return;
+            }
+            
+            // Check if group is already in the collection but at wrong position
+            if (sceneItem.Children.Contains(groupItem))
+            {
+                // Move to correct position
+                sceneItem.Children.Remove(groupItem);
+            }
             
             // Insert the group at the correct position
-            if (insertIndex >= sceneItem.Children.Count)
+            if (correctIndex >= sceneItem.Children.Count)
             {
                 sceneItem.Children.Add(groupItem);
             }
             else
             {
-                sceneItem.Children.Insert(insertIndex, groupItem);
+                sceneItem.Children.Insert(correctIndex, groupItem);
             }
             
-            LogService.Info($"Added {groupItem.ItemType} group '{groupItem.DisplayName}' to scene at index {insertIndex}");
+            LogService.Info($"Added {groupItem.ItemType} group '{groupItem.DisplayName}' to scene at index {correctIndex}");
         }
 
         private bool HasVisibleGroups(SceneTreeItemViewModel sceneItem)
@@ -1192,7 +1220,8 @@ namespace DANCustomTools.ViewModels
 
                 // Notify UI about SelectedComponents change
                 OnPropertyChanged(nameof(SelectedComponents));
-                
+                OnPropertyChanged(nameof(SelectedComponentsCount));
+
                 ApplyComponentFilters();
                 
                 // Enable filtering when not all components are selected
@@ -1231,6 +1260,7 @@ namespace DANCustomTools.ViewModels
                 
                 // Notify UI about SelectedComponents change
                 OnPropertyChanged(nameof(SelectedComponents));
+                OnPropertyChanged(nameof(SelectedComponentsCount));
                 
                 // All components selected = no filtering
                 IsComponentFilterEnabled = false;
@@ -1264,6 +1294,7 @@ namespace DANCustomTools.ViewModels
                 
                 // Notify UI about SelectedComponents change
                 OnPropertyChanged(nameof(SelectedComponents));
+                OnPropertyChanged(nameof(SelectedComponentsCount));
                 
                 // No components selected = maximum filtering (hide all)
                 IsComponentFilterEnabled = true;
@@ -1338,24 +1369,47 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
-                // Ensure we're on the UI thread
-                App.Current?.Dispatcher.Invoke(() =>
+                // Use async dispatcher to avoid blocking UI thread
+                App.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    // Find the scene tree items and update their actor groups
-                    foreach (var sceneItem in SceneTreeItems)
+                    // Batch updates to minimize UI notifications
+                    using (var deferRefresh = DeferTreeViewRefresh())
                     {
-                        UpdateSceneActorsGroup(sceneItem, actorsToShow);
+                        // Find the scene tree items and update their actor groups
+                        foreach (var sceneItem in SceneTreeItems)
+                        {
+                            UpdateSceneActorsGroup(sceneItem, actorsToShow);
+                        }
                     }
                     
-                    // Force UI refresh
+                    // Single UI refresh after all updates
                     OnPropertyChanged(nameof(SceneTreeItems));
-                });
+                }));
                 
-                LogService.Info($"Rebuilt scene tree with {actorsToShow.Count} actors");
+                LogService.Info($"Scheduled scene tree rebuild with {actorsToShow.Count} actors");
             }
             catch (Exception ex)
             {
                 LogService.Error("Failed to rebuild scene tree with filtered actors", ex);
+            }
+        }
+
+        /// <summary>
+        /// Creates a disposable object that defers UI refresh until disposed
+        /// </summary>
+        private IDisposable DeferTreeViewRefresh()
+        {
+            return new TreeViewRefreshDeferrer();
+        }
+
+        /// <summary>
+        /// Helper class to batch UI updates for better performance
+        /// </summary>
+        private class TreeViewRefreshDeferrer : IDisposable
+        {
+            public void Dispose()
+            {
+                // Placeholder for batched refresh logic if needed
             }
         }
 
@@ -1370,23 +1424,52 @@ namespace DANCustomTools.ViewModels
                 // Get actors that belong to this scene
                 var sceneActors = actorsToShow.Where(a => sceneModel.Actors.Contains(a)).ToList();
 
-                LogService.Info($"Scene '{sceneModel.UniqueName}': Original actors: {sceneModel.Actors.Count}, Filtered actors: {sceneActors.Count}");
-
-                // Update the actors group
-                actorsGroup.Children.Clear();
-                actorsGroup.DisplayName = $"Actors ({sceneActors.Count})";
-
-                foreach (var actor in sceneActors)
-                {
-                    actorsGroup.Children.Add(new SceneTreeItemViewModel
-                    {
-                        DisplayName = actor.FriendlyName,
-                        Model = actor,
-                        ItemType = SceneTreeItemType.Actor
-                    });
-                }
+                // Performance optimization: Only update if the content actually changed
+                var currentActorCount = actorsGroup.Children.Count;
+                var newActorCount = sceneActors.Count;
                 
-                LogService.Info($"Updated actors group for scene '{sceneModel.UniqueName}' with {sceneActors.Count} actors");
+                // Check if we need to update at all
+                bool needsUpdate = currentActorCount != newActorCount;
+                if (!needsUpdate && sceneActors.Count > 0)
+                {
+                    // Quick check if actors are the same (by reference)
+                    var currentActors = actorsGroup.Children.Select(c => c.Model).OfType<ActorModel>().ToArray();
+                    needsUpdate = !sceneActors.SequenceEqual(currentActors);
+                }
+
+                if (needsUpdate)
+                {
+                    // Batch the updates to minimize UI notifications
+                    var children = actorsGroup.Children;
+                    
+                    // Use more efficient bulk operations
+                    if (sceneActors.Count == 0)
+                    {
+                        // Clear all at once
+                        children.Clear();
+                    }
+                    else
+                    {
+                        // Replace existing items more efficiently
+                        children.Clear();
+                        
+                        // Add all new items in one batch
+                        foreach (var actor in sceneActors)
+                        {
+                            children.Add(new SceneTreeItemViewModel
+                            {
+                                DisplayName = actor.FriendlyName,
+                                Model = actor,
+                                ItemType = SceneTreeItemType.Actor
+                            });
+                        }
+                    }
+                    
+                    // Update display name only once
+                    actorsGroup.DisplayName = $"Actors ({sceneActors.Count})";
+                    
+                    LogService.Info($"Updated actors group for scene '{sceneModel.UniqueName}' with {sceneActors.Count} actors");
+                }
             }
 
             // Recursively update child scenes

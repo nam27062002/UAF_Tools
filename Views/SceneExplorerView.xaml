@@ -467,7 +467,7 @@
                                 <TextBlock Text="{Binding}"
                                            VerticalAlignment="Center"
                                            FontWeight="Medium"/>
-                                <TextBlock Text="{Binding DataContext.SelectedComponents.Count, RelativeSource={RelativeSource AncestorType=UserControl}, StringFormat='({0} selected)'}"
+                                <TextBlock Text="{Binding DataContext.SelectedComponentsCount, RelativeSource={RelativeSource AncestorType=UserControl}, StringFormat='({0} selected)'}"
                                            VerticalAlignment="Center"
                                            Margin="6,0,0,0"
                                            FontSize="11"
