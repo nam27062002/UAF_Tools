@@ -38,6 +38,10 @@ namespace DANCustomTools.ViewModels
         private List<ActorModel> _originalActors = new();
         private bool _isComponentFilterEnabled;
 
+        // Selection request throttling
+        private DateTime _lastSelectionRequestTime = DateTime.MinValue;
+        private readonly TimeSpan _selectionRequestThrottleInterval = TimeSpan.FromMilliseconds(1000); // 1 second minimum between requests
+
         public override string SubToolName => "Scene Explorer";
 
         // Context menu commands
@@ -202,7 +206,7 @@ namespace DANCustomTools.ViewModels
                         try
                         {
                             LogService.Info("Requesting current selection from Engine");
-                            _sceneService.RequestCurrentSelection();
+                            RequestCurrentSelectionThrottled();
                         }
                         catch (Exception ex)
                         {
@@ -244,7 +248,7 @@ namespace DANCustomTools.ViewModels
                         if (_sceneService.IsConnected)
                         {
                             LogService.Info("Requesting current selection after scene tree update");
-                            _sceneService.RequestCurrentSelection();
+                            RequestCurrentSelectionThrottled();
                         }
                     }
                     catch (Exception ex)
@@ -395,6 +399,22 @@ namespace DANCustomTools.ViewModels
         private void UpdateConnectionStatus()
         {
             IsConnected = _sceneService.IsConnected;
+        }
+
+        private void RequestCurrentSelectionThrottled()
+        {
+            var now = DateTime.Now;
+            var timeSinceLastRequest = now - _lastSelectionRequestTime;
+            
+            if (timeSinceLastRequest < _selectionRequestThrottleInterval)
+            {
+                LogService.Info($"Throttling RequestCurrentSelection - last request was {timeSinceLastRequest.TotalMilliseconds:F0}ms ago (min interval: {_selectionRequestThrottleInterval.TotalMilliseconds}ms)");
+                return;
+            }
+            
+            _lastSelectionRequestTime = now;
+            LogService.Info("Sending throttled RequestCurrentSelection");
+            _sceneService.RequestCurrentSelection();
         }
 
         private void ClearTreeSelection(ObservableCollection<SceneTreeItemViewModel> items)
