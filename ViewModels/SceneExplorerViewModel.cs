@@ -48,6 +48,10 @@ namespace DANCustomTools.ViewModels
         // Object type filtering
         private ObjectTypeFilter _currentObjectTypeFilter = ObjectTypeFilter.All;
         private Dictionary<SceneTreeItemViewModel, (SceneTreeItemViewModel? actorsGroup, SceneTreeItemViewModel? frisesGroup)> _originalSceneGroups = new();
+        // Throttling mechanism for filter operations
+        private Timer? _filterThrottleTimer;
+        private ObjectTypeFilter? _pendingFilter;
+        private readonly object _filterLock = new object();
 
         public override string SubToolName => "Scene Explorer";
 
@@ -415,26 +419,56 @@ namespace DANCustomTools.ViewModels
         {
             if (CurrentObjectTypeFilter == filter) return;
 
+            lock (_filterLock)
+            {
+                // Store the pending filter
+                _pendingFilter = filter;
+                
+                // Cancel any existing timer
+                _filterThrottleTimer?.Dispose();
+                
+                // Create a new timer that will apply the filter after a short delay
+                _filterThrottleTimer = new Timer(ApplyPendingFilter, null, TimeSpan.FromMilliseconds(100), Timeout.InfiniteTimeSpan);
+            }
+
+            // Update UI immediately for responsiveness
             CurrentObjectTypeFilter = filter;
-            
-            // Notify UI about property changes
             OnPropertyChanged(nameof(IsShowingAll));
             OnPropertyChanged(nameof(IsShowingActorsOnly));
             OnPropertyChanged(nameof(IsShowingFrisesOnly));
 
-            // Apply the object type filter
-            ApplyObjectTypeFilter();
+            LogService.Info($"Object type filter scheduled: {filter}");
+        }
 
-            LogService.Info($"Object type filter changed to: {filter}");
+        
+        private void ApplyPendingFilter(object? state)
+        {
+            lock (_filterLock)
+            {
+                if (_pendingFilter.HasValue)
+                {
+                    var filterToApply = _pendingFilter.Value;
+                    _pendingFilter = null;
+                    
+                    // Apply the filter on UI thread
+                    App.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        ApplyObjectTypeFilter();
+                    }));
+                }
+            }
         }
 
         private void ApplyObjectTypeFilter()
         {
             try
             {
+                var startTime = DateTime.Now;
+                
                 // Use async dispatcher to avoid blocking UI thread
                 App.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
+                    // Suspend layout updates during the operation
                     // Batch updates to minimize UI notifications
                     using (var deferRefresh = DeferTreeViewRefresh())
                     {
@@ -447,6 +481,9 @@ namespace DANCustomTools.ViewModels
                     
                     // Single UI refresh after all updates
                     OnPropertyChanged(nameof(SceneTreeItems));
+                    
+                    var duration = (DateTime.Now - startTime).TotalMilliseconds;
+                    LogService.Info($"Object type filter '{CurrentObjectTypeFilter}' applied in {duration:F0}ms");
                 }));
                 
                 LogService.Info($"Scheduled object type filter application: {CurrentObjectTypeFilter}");
@@ -464,79 +501,85 @@ namespace DANCustomTools.ViewModels
             // Get original groups for this scene
             if (!_originalSceneGroups.TryGetValue(sceneItem, out var originalGroups))
             {
-                LogService.Warning($"No original groups found for scene: {sceneModel.UniqueName}");
-                return;
+                return; // Skip if no original groups found
             }
 
             var (originalActorsGroup, originalFrisesGroup) = originalGroups;
             bool hasVisibleContent = false;
 
-            // First, remove all groups from the scene to start fresh
+            // Performance optimization: Batch all group operations
+            var groupsToAdd = new List<SceneTreeItemViewModel>();
             var groupsToRemove = sceneItem.Children.Where(c => 
                 c.ItemType == SceneTreeItemType.ActorSet || 
                 c.ItemType == SceneTreeItemType.FriseSet).ToList();
-            
-            foreach (var group in groupsToRemove)
-            {
-                sceneItem.Children.Remove(group);
-            }
 
-            // Now add back only the groups that should be visible based on filter
+            // Determine which groups should be visible based on filter
             switch (CurrentObjectTypeFilter)
             {
                 case ObjectTypeFilter.All:
-                    // Show both actors and frises groups if they exist and have content
                     if (originalActorsGroup != null && sceneModel.Actors.Count > 0) 
                     {
-                        AddGroupToScene(sceneItem, originalActorsGroup);
+                        groupsToAdd.Add(originalActorsGroup);
                         hasVisibleContent = true;
                     }
-
                     if (originalFrisesGroup != null && sceneModel.Frises.Count > 0) 
                     {
-                        AddGroupToScene(sceneItem, originalFrisesGroup);
+                        groupsToAdd.Add(originalFrisesGroup);
                         hasVisibleContent = true;
                     }
                     break;
 
                 case ObjectTypeFilter.ActorsOnly:
-                    // Show only actors group if it exists and has content
                     if (originalActorsGroup != null && sceneModel.Actors.Count > 0) 
                     {
-                        AddGroupToScene(sceneItem, originalActorsGroup);
+                        groupsToAdd.Add(originalActorsGroup);
                         hasVisibleContent = true;
                     }
                     break;
 
                 case ObjectTypeFilter.FrisesOnly:
-                    // Show only frises group if it exists and has content
                     if (originalFrisesGroup != null && sceneModel.Frises.Count > 0) 
                     {
-                        AddGroupToScene(sceneItem, originalFrisesGroup);
+                        groupsToAdd.Add(originalFrisesGroup);
                         hasVisibleContent = true;
                     }
                     break;
             }
 
-            // Recursively apply to child scenes and check if any child has visible content
+            // Batch remove all groups first
+            foreach (var group in groupsToRemove)
+            {
+                sceneItem.Children.Remove(group);
+            }
+
+            // Batch add new groups in correct order
+            foreach (var group in groupsToAdd.OrderBy(g => GetInsertIndexForGroup(sceneItem.Children, g.ItemType)))
+            {
+                AddGroupToScene(sceneItem, group);
+            }
+
+            // Recursively apply to child scenes with reduced logging
+            var childScenesWithContent = 0;
             foreach (var childScene in sceneItem.Children.Where(c => c.ItemType == SceneTreeItemType.Scene).ToList())
             {
                 ApplyObjectTypeFilterToScene(childScene);
                 
-                // Check if child scene has any visible groups
-                var childHasContent = HasVisibleGroups(childScene);
-                if (childHasContent)
+                if (HasVisibleGroups(childScene))
                 {
                     hasVisibleContent = true;
+                    childScenesWithContent++;
                 }
                 else
                 {
-                    // Hide child scene if it has no visible content
                     SetSceneVisibility(childScene, false);
                 }
             }
 
-            LogService.Info($"Scene '{sceneModel.UniqueName}': Filter={CurrentObjectTypeFilter}, HasContent={hasVisibleContent}, ActorsCount={sceneModel.Actors.Count}, FrisesCount={sceneModel.Frises.Count}");
+            // Reduced logging - only log summary information
+            if (sceneModel.Actors.Count > 0 || sceneModel.Frises.Count > 0 || childScenesWithContent > 0)
+            {
+                LogService.Info($"Scene '{sceneModel.UniqueName}': {CurrentObjectTypeFilter}, A:{sceneModel.Actors.Count}, F:{sceneModel.Frises.Count}, Children:{childScenesWithContent}");
+            }
         }
 
         private void AddGroupToScene(SceneTreeItemViewModel sceneItem, SceneTreeItemViewModel groupItem)
@@ -569,7 +612,8 @@ namespace DANCustomTools.ViewModels
                 sceneItem.Children.Insert(correctIndex, groupItem);
             }
             
-            LogService.Info($"Added {groupItem.ItemType} group '{groupItem.DisplayName}' to scene at index {correctIndex}");
+            // Minimal logging for performance
+            // LogService.Info($"Added {groupItem.ItemType} group '{groupItem.DisplayName}' to scene at index {correctIndex}");
         }
 
         private bool HasVisibleGroups(SceneTreeItemViewModel sceneItem)
@@ -1369,6 +1413,8 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
+                var startTime = DateTime.Now;
+                
                 // Use async dispatcher to avoid blocking UI thread
                 App.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
@@ -1384,6 +1430,9 @@ namespace DANCustomTools.ViewModels
                     
                     // Single UI refresh after all updates
                     OnPropertyChanged(nameof(SceneTreeItems));
+                    
+                    var duration = (DateTime.Now - startTime).TotalMilliseconds;
+                    LogService.Info($"Scene tree rebuilt with {actorsToShow.Count} actors in {duration:F0}ms");
                 }));
                 
                 LogService.Info($"Scheduled scene tree rebuild with {actorsToShow.Count} actors");
@@ -1468,7 +1517,11 @@ namespace DANCustomTools.ViewModels
                     // Update display name only once
                     actorsGroup.DisplayName = $"Actors ({sceneActors.Count})";
                     
-                    LogService.Info($"Updated actors group for scene '{sceneModel.UniqueName}' with {sceneActors.Count} actors");
+                    // Minimal logging - only for scenes with significant changes
+                    if (sceneActors.Count > 10 || currentActorCount > 10)
+                    {
+                        LogService.Info($"Updated actors group for scene '{sceneModel.UniqueName}': {currentActorCount} -> {sceneActors.Count} actors");
+                    }
                 }
             }
 
@@ -1518,6 +1571,9 @@ namespace DANCustomTools.ViewModels
 
         public override void Dispose()
         {
+            // Dispose throttle timer
+            _filterThrottleTimer?.Dispose();
+            
             // Unsubscribe from component events
             foreach (var component in AvailableComponents)
             {
