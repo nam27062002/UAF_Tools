@@ -47,6 +47,7 @@ namespace DANCustomTools.ViewModels
 
         // Object type filtering
         private ObjectTypeFilter _currentObjectTypeFilter = ObjectTypeFilter.All;
+        private Dictionary<SceneTreeItemViewModel, (SceneTreeItemViewModel? actorsGroup, SceneTreeItemViewModel? frisesGroup)> _originalSceneGroups = new();
 
         public override string SubToolName => "Scene Explorer";
 
@@ -240,6 +241,9 @@ namespace DANCustomTools.ViewModels
         {
             App.Current?.Dispatcher.InvokeAsync(() =>
             {
+                // Clear previous original groups
+                _originalSceneGroups.Clear();
+                
                 // Store original actors for filtering
                 StoreOriginalActors(sceneTree);
                 
@@ -260,6 +264,9 @@ namespace DANCustomTools.ViewModels
         {
             App.Current?.Dispatcher.Invoke(() =>
             {
+                // Clear previous original groups
+                _originalSceneGroups.Clear();
+                
                 // Store original actors from all scenes for filtering
                 StoreOriginalActorsFromScenes(sceneTrees);
                 
@@ -441,67 +448,60 @@ namespace DANCustomTools.ViewModels
         {
             if (sceneItem.Model is not SceneTreeModel sceneModel) return;
 
-            // Find actors and frises groups
-            var actorsGroup = sceneItem.Children.FirstOrDefault(c => c.ItemType == SceneTreeItemType.ActorSet);
-            var frisesGroup = sceneItem.Children.FirstOrDefault(c => c.ItemType == SceneTreeItemType.FriseSet);
+            // Get original groups for this scene
+            if (!_originalSceneGroups.TryGetValue(sceneItem, out var originalGroups))
+            {
+                LogService.Warning($"No original groups found for scene: {sceneModel.UniqueName}");
+                return;
+            }
 
+            var (originalActorsGroup, originalFrisesGroup) = originalGroups;
             bool hasVisibleContent = false;
 
+            // First, remove all groups from the scene to start fresh
+            var groupsToRemove = sceneItem.Children.Where(c => 
+                c.ItemType == SceneTreeItemType.ActorSet || 
+                c.ItemType == SceneTreeItemType.FriseSet).ToList();
+            
+            foreach (var group in groupsToRemove)
+            {
+                sceneItem.Children.Remove(group);
+            }
+
+            // Now add back only the groups that should be visible based on filter
             switch (CurrentObjectTypeFilter)
             {
                 case ObjectTypeFilter.All:
-                    // Show both actors and frises groups
-                    if (actorsGroup != null && sceneModel.Actors.Count > 0) 
+                    // Show both actors and frises groups if they exist and have content
+                    if (originalActorsGroup != null && sceneModel.Actors.Count > 0) 
                     {
-                        SetGroupVisibility(actorsGroup, true);
+                        AddGroupToScene(sceneItem, originalActorsGroup);
                         hasVisibleContent = true;
-                    }
-                    else if (actorsGroup != null)
-                    {
-                        SetGroupVisibility(actorsGroup, false);
                     }
 
-                    if (frisesGroup != null && sceneModel.Frises.Count > 0) 
+                    if (originalFrisesGroup != null && sceneModel.Frises.Count > 0) 
                     {
-                        SetGroupVisibility(frisesGroup, true);
+                        AddGroupToScene(sceneItem, originalFrisesGroup);
                         hasVisibleContent = true;
-                    }
-                    else if (frisesGroup != null)
-                    {
-                        SetGroupVisibility(frisesGroup, false);
                     }
                     break;
 
                 case ObjectTypeFilter.ActorsOnly:
-                    // Show only actors group if it has items
-                    if (actorsGroup != null && sceneModel.Actors.Count > 0) 
+                    // Show only actors group if it exists and has content
+                    if (originalActorsGroup != null && sceneModel.Actors.Count > 0) 
                     {
-                        SetGroupVisibility(actorsGroup, true);
+                        AddGroupToScene(sceneItem, originalActorsGroup);
                         hasVisibleContent = true;
                     }
-                    else if (actorsGroup != null)
-                    {
-                        SetGroupVisibility(actorsGroup, false);
-                    }
-
-                    // Always hide frises
-                    if (frisesGroup != null) SetGroupVisibility(frisesGroup, false);
                     break;
 
                 case ObjectTypeFilter.FrisesOnly:
-                    // Show only frises group if it has items
-                    if (frisesGroup != null && sceneModel.Frises.Count > 0) 
+                    // Show only frises group if it exists and has content
+                    if (originalFrisesGroup != null && sceneModel.Frises.Count > 0) 
                     {
-                        SetGroupVisibility(frisesGroup, true);
+                        AddGroupToScene(sceneItem, originalFrisesGroup);
                         hasVisibleContent = true;
                     }
-                    else if (frisesGroup != null)
-                    {
-                        SetGroupVisibility(frisesGroup, false);
-                    }
-
-                    // Always hide actors
-                    if (actorsGroup != null) SetGroupVisibility(actorsGroup, false);
                     break;
             }
 
@@ -523,11 +523,25 @@ namespace DANCustomTools.ViewModels
                 }
             }
 
-            // Set visibility of this scene based on whether it has visible content
-            if (sceneItem.Model is SceneTreeModel) // Don't hide root scenes in SceneTreeItems collection
+            LogService.Info($"Scene '{sceneModel.UniqueName}': Filter={CurrentObjectTypeFilter}, HasContent={hasVisibleContent}, ActorsCount={sceneModel.Actors.Count}, FrisesCount={sceneModel.Frises.Count}");
+        }
+
+        private void AddGroupToScene(SceneTreeItemViewModel sceneItem, SceneTreeItemViewModel groupItem)
+        {
+            // Find the correct position to insert the group
+            int insertIndex = GetInsertIndexForGroup(sceneItem.Children, groupItem.ItemType);
+            
+            // Insert the group at the correct position
+            if (insertIndex >= sceneItem.Children.Count)
             {
-                SetSceneVisibility(sceneItem, hasVisibleContent);
+                sceneItem.Children.Add(groupItem);
             }
+            else
+            {
+                sceneItem.Children.Insert(insertIndex, groupItem);
+            }
+            
+            LogService.Info($"Added {groupItem.ItemType} group '{groupItem.DisplayName}' to scene at index {insertIndex}");
         }
 
         private bool HasVisibleGroups(SceneTreeItemViewModel sceneItem)
@@ -780,6 +794,9 @@ namespace DANCustomTools.ViewModels
                 ItemType = SceneTreeItemType.Scene
             };
 
+            SceneTreeItemViewModel? actorsGroup = null;
+            SceneTreeItemViewModel? frisesGroup = null;
+
             // Add child scenes first (recursive)
             foreach (var child in sceneTree.ChildScenes)
             {
@@ -790,7 +807,7 @@ namespace DANCustomTools.ViewModels
             // Add actors group if there are actors
             if (sceneTree.Actors.Count > 0)
             {
-                var actorsGroup = new SceneTreeItemViewModel
+                actorsGroup = new SceneTreeItemViewModel
                 {
                     DisplayName = $"Actors ({sceneTree.Actors.Count})",
                     Model = null,
@@ -813,7 +830,7 @@ namespace DANCustomTools.ViewModels
             // Add frises group if there are frises
             if (sceneTree.Frises.Count > 0)
             {
-                var frisesGroup = new SceneTreeItemViewModel
+                frisesGroup = new SceneTreeItemViewModel
                 {
                     DisplayName = $"Frises ({sceneTree.Frises.Count})",
                     Model = null,
@@ -832,6 +849,9 @@ namespace DANCustomTools.ViewModels
 
                 item.Children.Add(frisesGroup);
             }
+
+            // Store original groups for filtering
+            _originalSceneGroups[item] = (actorsGroup, frisesGroup);
 
             return item;
         }
