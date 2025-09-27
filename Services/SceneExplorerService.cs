@@ -236,7 +236,6 @@ namespace DANCustomTools.Services
 
             model.FriendlyName = friendlyName;
             model.Components = components;
-            LogService.Info($"ActorModel: Components={model.Components}");
             model.LuaPath = luaPath;
 
             return model;
