@@ -228,20 +228,33 @@ namespace DANCustomTools.Core.Services
 
         protected virtual void ProcessIncomingMessages()
         {
-            if (_plugin == null)
+            pluginWrapper? plugin;
+            lock (ConnectionLock)
+            {
+                plugin = _plugin;
+            }
+
+            if (plugin == null)
                 return;
 
-            var blob = new blobWrapper();
-            while (_plugin.dispatch(blob))
+            try
             {
-                try
+                var blob = new blobWrapper();
+                while (plugin.dispatch(blob))
                 {
-                    ProcessMessage(blob);
+                    try
+                    {
+                        ProcessMessage(blob);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogService.Error($"Failed to process {PluginName} message", ex);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    LogService.Error($"Failed to process {PluginName} message", ex);
-                }
+            }
+            catch (Exception ex)
+            {
+                LogService.Error($"Error in ProcessIncomingMessages for {PluginName}", ex);
             }
         }
 
@@ -264,7 +277,16 @@ namespace DANCustomTools.Core.Services
 
         protected void SendMessage(Action<blobWrapper> buildMessage)
         {
-            if (!_isConnected || _plugin == null)
+            pluginWrapper? plugin;
+            bool isConnected;
+
+            lock (ConnectionLock)
+            {
+                plugin = _plugin;
+                isConnected = _isConnected;
+            }
+
+            if (!isConnected || plugin == null)
                 return;
 
             try

@@ -421,11 +421,12 @@ namespace DANCustomTools.ViewModels
 
             lock (_filterLock)
             {
+                // Dispose any existing timer safely
+                _filterThrottleTimer?.Dispose();
+                _filterThrottleTimer = null;
+                
                 // Store the pending filter
                 _pendingFilter = filter;
-                
-                // Cancel any existing timer
-                _filterThrottleTimer?.Dispose();
                 
                 // Create a new timer that will apply the filter after a short delay
                 _filterThrottleTimer = new Timer(ApplyPendingFilter, null, TimeSpan.FromMilliseconds(100), Timeout.InfiniteTimeSpan);
@@ -443,18 +444,37 @@ namespace DANCustomTools.ViewModels
         
         private void ApplyPendingFilter(object? state)
         {
+            ObjectTypeFilter? filterToApply = null;
+            
             lock (_filterLock)
             {
                 if (_pendingFilter.HasValue)
                 {
-                    var filterToApply = _pendingFilter.Value;
+                    filterToApply = _pendingFilter.Value;
                     _pendingFilter = null;
-                    
-                    // Apply the filter on UI thread
+                }
+            }
+            
+            if (filterToApply.HasValue)
+            {
+                // Apply the filter on UI thread
+                try
+                {
                     App.Current?.Dispatcher.BeginInvoke(new Action(() =>
                     {
-                        ApplyObjectTypeFilter();
+                        try
+                        {
+                            ApplyObjectTypeFilter();
+                        }
+                        catch (Exception ex)
+                        {
+                            LogService.Error("Failed to apply pending object type filter", ex);
+                        }
                     }));
+                }
+                catch (Exception ex)
+                {
+                    LogService.Error("Failed to schedule pending object type filter", ex);
                 }
             }
         }
@@ -1573,21 +1593,36 @@ namespace DANCustomTools.ViewModels
 
         public override void Dispose()
         {
-            // Dispose throttle timer
-            _filterThrottleTimer?.Dispose();
-            
-            // Unsubscribe from component events
-            foreach (var component in AvailableComponents)
+            try
             {
-                component.SelectionChanged -= OnComponentSelectionChanged;
-            }
+                // Dispose throttle timer safely
+                lock (_filterLock)
+                {
+                    _filterThrottleTimer?.Dispose();
+                    _filterThrottleTimer = null;
+                    _pendingFilter = null;
+                }
+                
+                // Unsubscribe from component events
+                foreach (var component in AvailableComponents)
+                {
+                    component.SelectionChanged -= OnComponentSelectionChanged;
+                }
 
-            _sceneService.OnlineSceneTreeUpdated -= OnOnlineSceneTreeUpdated;
-            _sceneService.OfflineSceneTreesUpdated -= OnOfflineSceneTreesUpdated;
-            _sceneService.ObjectSelectedFromRuntime -= OnObjectSelectedFromRuntime;
-            _propertiesService.PropertiesUpdated -= OnPropertiesUpdated;
-            PropertiesEditor?.ViewModel?.Dispose();
-            base.Dispose();
+                _sceneService.OnlineSceneTreeUpdated -= OnOnlineSceneTreeUpdated;
+                _sceneService.OfflineSceneTreesUpdated -= OnOfflineSceneTreesUpdated;
+                _sceneService.ObjectSelectedFromRuntime -= OnObjectSelectedFromRuntime;
+                _propertiesService.PropertiesUpdated -= OnPropertiesUpdated;
+                PropertiesEditor?.ViewModel?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                LogService?.Error("Error during SceneExplorerViewModel disposal", ex);
+            }
+            finally
+            {
+                base.Dispose();
+            }
         }
     }
 }
