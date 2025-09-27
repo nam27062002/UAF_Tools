@@ -993,22 +993,15 @@ namespace DANCustomTools.ViewModels
                     return;
                 }
 
-                // Filter actors: Show only actors that DON'T have any of the DESELECTED components
-                var deselectedComponents = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var component in AvailableComponents)
-                {
-                    if (!component.IsSelected)
-                    {
-                        deselectedComponents.Add(component.ComponentName);
-                    }
-                }
+                // Filter actors: Show actors that have ANY of the SELECTED components (OR logic)
+                var selectedComponentsSet = new HashSet<string>(SelectedComponents, StringComparer.OrdinalIgnoreCase);
 
                 var filteredActors = new List<ActorModel>();
                 foreach (var actor in _originalActors)
                 {
-                    // Show actor only if it doesn't have any deselected components
-                    bool hasDeselectedComponent = _componentFilterService.ActorHasAnyComponent(actor, deselectedComponents);
-                    if (!hasDeselectedComponent)
+                    // Show actor if it has at least one selected component
+                    bool hasSelectedComponent = _componentFilterService.ActorHasAnyComponent(actor, selectedComponentsSet);
+                    if (hasSelectedComponent)
                     {
                         filteredActors.Add(actor);
                     }
@@ -1016,9 +1009,9 @@ namespace DANCustomTools.ViewModels
 
                 RebuildSceneTreeWithActors(filteredActors);
 
-                LogService.Info($"Applied component filters: {selectedComponents}/{totalComponents} components enabled");
-                LogService.Info($"Deselected components: [{string.Join(", ", deselectedComponents)}]");
-                LogService.Info($"Filtered actors: {filteredActors.Count}/{_originalActors.Count} actors shown");
+                LogService.Info($"Applied component filters with OR logic: {selectedComponents}/{totalComponents} components enabled");
+                LogService.Info($"Selected components: [{string.Join(", ", SelectedComponents)}]");
+                LogService.Info($"Filtered actors: {filteredActors.Count}/{_originalActors.Count} actors shown (actors with ANY selected component)");
             }
             catch (Exception ex)
             {
