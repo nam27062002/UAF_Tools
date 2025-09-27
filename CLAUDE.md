@@ -28,6 +28,8 @@ dotnet clean
 dotnet publish --configuration Release --runtime win-x64 --self-contained false
 ```
 
+**Note**: No test framework or linting commands are configured. The project relies on manual testing by running the application.
+
 ## Architecture Overview
 
 ### MainTool/SubTool System
@@ -133,6 +135,12 @@ The application is built around a hierarchical tool system:
 - **CommunityToolkit.Mvvm**: MVVM infrastructure and helpers
 - **MaterialDesignThemes**: UI theming framework
 - **Native Interop**: Unsafe code enabled for engine communication via external DLLs
+
+**Key NuGet Packages**:
+- Microsoft.Windows.Compatibility (9.0.0)
+- Microsoft.Extensions.DependencyInjection (8.0.0)
+- CommunityToolkit.Mvvm (8.2.2)
+- MaterialDesignThemes (5.1.0)
 
 ## Debugging and Development
 

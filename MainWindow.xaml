@@ -94,7 +94,8 @@
                             Orientation="Horizontal"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Margin="40,0,0,0">
+                            Margin="40,0,0,0"
+                            Visibility="Collapsed">
 
                         <!-- Editor Tool -->
                         <Button Command="{Binding SwitchToEditorCommand}"
