@@ -21,6 +21,7 @@ namespace DANCustomTools.Services
         private readonly Queue<uint> _deleteQueue = new();
         private readonly Queue<(uint objectRef, float dx, float dy, float dz)> _duplicateQueue = new();
         private string? _offlineSceneTreePath;
+        private DateTime _lastSceneTreeResponse = DateTime.MinValue;
 
         public override string PluginName => "SceneExplorer_Plugin";
 
@@ -73,7 +74,22 @@ namespace DANCustomTools.Services
         {
             if (IsConnected && Plugin != null)
             {
+                LogService.Info("Requesting scene tree from engine");
                 SendSceneTreeRequest();
+
+                // Schedule a retry after 2 seconds if no response
+                Task.Delay(2000).ContinueWith(_ =>
+                {
+                    if (IsConnected && Plugin != null && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 1)
+                    {
+                        LogService.Info("Retrying scene tree request (no response received)");
+                        SendSceneTreeRequest();
+                    }
+                });
+            }
+            else
+            {
+                LogService.Warning($"Cannot request scene tree - IsConnected: {IsConnected}, Plugin: {(Plugin != null ? "OK" : "NULL")}");
             }
         }
 
@@ -90,7 +106,7 @@ namespace DANCustomTools.Services
             var command = "";
             blob.extract(ref command);
 
-            LogService.Info($"SceneExplorer received message: '{command}'");
+            LogService.Info($"SceneExplorer received message: '{command}' [after reconnect: {DateTime.Now:HH:mm:ss}]");
 
             switch (command)
             {
@@ -114,6 +130,7 @@ namespace DANCustomTools.Services
             try
             {
                 var sceneTree = ConvertBlobToSceneTreeModel(blob, true);
+                _lastSceneTreeResponse = DateTime.Now;
                 LogService.Info($"SceneTree received: name='{sceneTree.UniqueName}', actors={sceneTree.Actors.Count}, frises={sceneTree.Frises.Count}, children={sceneTree.ChildScenes.Count}");
                 OnlineSceneTreeUpdated?.Invoke(this, sceneTree);
             }
@@ -325,12 +342,71 @@ namespace DANCustomTools.Services
 
         protected override void OnFirstTimeConnected()
         {
-            RequestSceneTree();
+            LogService.Info("SceneExplorer first time connected - requesting scene tree");
+
+            // Try multiple approaches to wake up engine
+            Task.Run(async () =>
+            {
+                if (!IsConnected || Plugin == null) return;
+
+                // First attempt: immediate request
+                LogService.Info("Immediate scene tree request after connection");
+                RequestSceneTree();
+
+                // Second attempt: after delay
+                await Task.Delay(500);
+                if (IsConnected && Plugin != null)
+                {
+                    LogService.Info("Delayed scene tree request after connection");
+                    SendSceneTreeRequest();
+                }
+
+                // Third attempt: aggressive retry
+                await Task.Delay(1000);
+                if (IsConnected && Plugin != null && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 2)
+                {
+                    LogService.Info("Aggressive scene tree request (no response)");
+                    SendSceneTreeRequest();
+                }
+
+                // Fourth attempt: wake-up approach
+                await Task.Delay(2000);
+                if (IsConnected && Plugin != null && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 3)
+                {
+                    LogService.Info("Wake-up approach - sending multiple requests");
+                    SendWakeupRequests();
+                }
+            });
         }
 
         private void SendSceneTreeRequest()
         {
+            LogService.Info("Sending 'SendSceneTree' message to engine");
             SendMessage(blob => blob.push("SendSceneTree"));
+        }
+
+        private void SendWakeupRequests()
+        {
+            if (!IsConnected || Plugin == null) return;
+
+            LogService.Info("Sending wake-up messages to engine");
+
+            // Try different message types to wake up engine
+            try
+            {
+                SendMessage(blob => blob.push("SendSceneTree"));
+
+                // Sometimes engines need a "ping" first
+                SendMessage(blob =>
+                {
+                    blob.push("RequestSelection");
+                    blob.push(0u); // dummy object ref
+                });
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Failed to send wake-up requests", ex);
+            }
         }
 
 

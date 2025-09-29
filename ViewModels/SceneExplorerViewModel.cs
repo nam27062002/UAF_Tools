@@ -49,7 +49,7 @@ namespace DANCustomTools.ViewModels
         private ObjectTypeFilter _currentObjectTypeFilter = ObjectTypeFilter.All;
         private Dictionary<SceneTreeItemViewModel, (SceneTreeItemViewModel? actorsGroup, SceneTreeItemViewModel? frisesGroup)> _originalSceneGroups = new();
         // Throttling mechanism for filter operations
-        private Timer? _filterThrottleTimer;
+        private System.Threading.Timer? _filterThrottleTimer;
         private ObjectTypeFilter? _pendingFilter;
         private readonly object _filterLock = new object();
 
@@ -429,7 +429,7 @@ namespace DANCustomTools.ViewModels
                 _pendingFilter = filter;
                 
                 // Create a new timer that will apply the filter after a short delay
-                _filterThrottleTimer = new Timer(ApplyPendingFilter, null, TimeSpan.FromMilliseconds(100), Timeout.InfiniteTimeSpan);
+                _filterThrottleTimer = new System.Threading.Timer(ApplyPendingFilter, null, TimeSpan.FromMilliseconds(100), Timeout.InfiniteTimeSpan);
             }
 
             // Update UI immediately for responsiveness

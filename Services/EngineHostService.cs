@@ -57,6 +57,8 @@ namespace DANCustomTools.Services
 				if (!connected)
 				{
 					_engine.disconnect();
+					// Clear plugin cache when connection drops (like legacy SceneExplorer)
+					_plugins.Clear();
 					connected = _engine.connectToHost("127.0.0.1", _settings.Port);
 					if (connected)
 					{
@@ -76,6 +78,8 @@ namespace DANCustomTools.Services
 				if (_engine == null) return;
 				_engine.disconnect();
 				_connected = false;
+				// Clear plugin cache to force new instances on reconnect (like legacy SceneExplorer)
+				_plugins.Clear();
 			}
 		}
 

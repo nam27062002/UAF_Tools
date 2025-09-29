@@ -17,6 +17,7 @@ namespace DANCustomTools.Core.Services
         private pluginWrapper? _plugin;
         private CancellationTokenSource? _cancellationTokenSource;
         private bool _isConnected;
+        private bool _hasTriggeredFirstConnection;
 
         public abstract string PluginName { get; }
         public event EventHandler<bool>? ConnectionStatusChanged;
@@ -57,6 +58,7 @@ namespace DANCustomTools.Core.Services
                     EngineHost.Disconnect();
                     _plugin = null;
                     _isConnected = false;
+                    _hasTriggeredFirstConnection = false; // Reset flag to trigger reconnection logic
                 }
             }
         }
@@ -129,6 +131,7 @@ namespace DANCustomTools.Core.Services
                 lock (ConnectionLock)
                 {
                     _isConnected = false;
+                    _hasTriggeredFirstConnection = false; // Reset flag for next connection
                 }
             }
 
@@ -159,9 +162,10 @@ namespace DANCustomTools.Core.Services
                         // Process incoming messages
                         ProcessIncomingMessages();
 
-                        // Handle first-time connection
-                        if (!wasConnected)
+                        // Handle first-time connection (or reconnection after disconnect)
+                        if (!_hasTriggeredFirstConnection)
                         {
+                            _hasTriggeredFirstConnection = true;
                             OnFirstTimeConnected();
                         }
 
@@ -187,6 +191,8 @@ namespace DANCustomTools.Core.Services
             var wasConnected = _isConnected;
             var isCurrentlyConnected = _isConnected;
 
+            // LogService.Debug($"{PluginName} UpdateConnectionStatus: wasConnected={wasConnected}, current={isCurrentlyConnected}, hasTriggered={_hasTriggeredFirstConnection}");
+
             // Test existing connection
             if (isCurrentlyConnected)
             {
@@ -200,6 +206,7 @@ namespace DANCustomTools.Core.Services
                 {
                     EngineHost.Disconnect();
                     _plugin = null;
+                    _hasTriggeredFirstConnection = false; // Reset flag when disconnecting
                 }
 
                 // Attempt to connect
@@ -261,6 +268,7 @@ namespace DANCustomTools.Core.Services
                 {
                     _isConnected = false;
                     _plugin = null;
+                    _hasTriggeredFirstConnection = false; // Reset to trigger fresh connection
                 }
 
                 EngineHost.Disconnect();
