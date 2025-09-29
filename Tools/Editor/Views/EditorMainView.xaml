@@ -18,21 +18,7 @@
         <converters:ConnectionStatusColorConverter x:Key="ConnectionStatusColorConverter" />
     </UserControl.Resources>
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <!-- Header/Title Bar -->
-        <Border Grid.Row="0" Background="#2D2D30" Padding="16,8">
-            <TextBlock Text="Editor"
-                       Foreground="White"
-                       FontSize="16"
-                       FontWeight="Bold"
-                       VerticalAlignment="Center" />
-        </Border>
-
-        <Grid Grid.Row="1" Margin="0">
+        <Grid Margin="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1*" MinWidth="300" />   <!-- Left 50% -->
                 <ColumnDefinition Width="Auto" />               <!-- Splitter -->
@@ -72,7 +58,7 @@
 
 
         <!-- Loading Overlay -->
-        <Border Grid.RowSpan="2"
+        <Border
                 Background="{DynamicResource MaterialDesignPaper}"
                 Opacity="0.95"
                 Visibility="Collapsed"

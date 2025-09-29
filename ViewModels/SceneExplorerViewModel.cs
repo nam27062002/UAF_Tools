@@ -48,6 +48,7 @@ namespace DANCustomTools.ViewModels
         // Object type filtering
         private ObjectTypeFilter _currentObjectTypeFilter = ObjectTypeFilter.All;
         private Dictionary<SceneTreeItemViewModel, (SceneTreeItemViewModel? actorsGroup, SceneTreeItemViewModel? frisesGroup)> _originalSceneGroups = new();
+        private List<SceneTreeItemViewModel> _originalSceneTreeItems = new();
         // Throttling mechanism for filter operations
         private System.Threading.Timer? _filterThrottleTimer;
         private ObjectTypeFilter? _pendingFilter;
@@ -263,6 +264,10 @@ namespace DANCustomTools.ViewModels
                 var items = new ObservableCollection<SceneTreeItemViewModel>();
                 items.Add(treeItem);
                 SceneTreeItems = items;
+
+                // Store original scene tree items for filtering
+                _originalSceneTreeItems.Clear();
+                _originalSceneTreeItems.Add(treeItem);
                 LogService.Info($"Updated scene tree: {sceneTree.UniqueName}");
                 LogService.Info($"SceneTreeItems.Count={SceneTreeItems.Count}");
 
@@ -283,10 +288,12 @@ namespace DANCustomTools.ViewModels
                 ExtractAndPopulateComponents(_originalActors);
 
                 SceneTreeItems.Clear();
+                _originalSceneTreeItems.Clear();
                 foreach (var sceneTree in sceneTrees)
                 {
                     var treeItem = CreateSceneTreeItem(sceneTree);
                     SceneTreeItems.Add(treeItem);
+                    _originalSceneTreeItems.Add(treeItem);
                 }
                 LogService.Info($"Updated offline scene trees: {sceneTrees.Count} scenes");
             });
@@ -492,10 +499,36 @@ namespace DANCustomTools.ViewModels
                     // Batch updates to minimize UI notifications
                     using (var deferRefresh = DeferTreeViewRefresh())
                     {
+                        // If showing all, restore original scenes first
+                        if (CurrentObjectTypeFilter == ObjectTypeFilter.All)
+                        {
+                            // Restore all original scenes
+                            SceneTreeItems.Clear();
+                            foreach (var originalScene in _originalSceneTreeItems)
+                            {
+                                SceneTreeItems.Add(originalScene);
+                            }
+                        }
+
                         // Apply object type filter to each scene in the tree
-                        foreach (var sceneItem in SceneTreeItems)
+                        var scenesToRemove = new List<SceneTreeItemViewModel>();
+                        foreach (var sceneItem in SceneTreeItems.ToList())
                         {
                             ApplyObjectTypeFilterToScene(sceneItem);
+
+                            // Check if this root level scene should be hidden when filtering by specific type
+                            if ((CurrentObjectTypeFilter == ObjectTypeFilter.ActorsOnly ||
+                                CurrentObjectTypeFilter == ObjectTypeFilter.FrisesOnly) &&
+                                !HasVisibleGroups(sceneItem))
+                            {
+                                scenesToRemove.Add(sceneItem);
+                            }
+                        }
+
+                        // Remove empty scenes from root level when filtering by actors
+                        foreach (var sceneToRemove in scenesToRemove)
+                        {
+                            SceneTreeItems.Remove(sceneToRemove);
                         }
                     }
                     
