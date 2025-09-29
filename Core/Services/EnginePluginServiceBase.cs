@@ -252,6 +252,19 @@ namespace DANCustomTools.Core.Services
                     }
                 }
             }
+            catch (System.AccessViolationException ex)
+            {
+                LogService.Error($"Access violation in {PluginName} - forcing disconnect to recover", ex);
+
+                // Force disconnect to trigger clean reconnection
+                lock (ConnectionLock)
+                {
+                    _isConnected = false;
+                    _plugin = null;
+                }
+
+                EngineHost.Disconnect();
+            }
             catch (Exception ex)
             {
                 LogService.Error($"Error in ProcessIncomingMessages for {PluginName}", ex);
