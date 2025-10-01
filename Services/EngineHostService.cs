@@ -50,19 +50,47 @@ namespace DANCustomTools.Services
 				bool connected = _connected;
 				if (connected)
 				{
-					var blob = new blobWrapper();
-					connected = blob.sendToHost();
+					try
+					{
+						// Fast disconnect detection: check both isConnected() and sendToHost()
+						connected = _engine.isConnected();
+						if (connected)
+						{
+							var blob = new blobWrapper();
+							connected = blob.sendToHost();
+						}
+					}
+					catch (Exception ex)
+					{
+						// Any exception means connection is lost
+						_logService.Warning($"Connection check failed: {ex.Message}");
+						connected = false;
+					}
 				}
 
 				if (!connected)
 				{
-					_engine.disconnect();
+					try
+					{
+						_engine.disconnect();
+					}
+					catch { /* Ignore disconnect errors */ }
+
 					// Clear plugin cache when connection drops (like legacy SceneExplorer)
 					_plugins.Clear();
-					connected = _engine.connectToHost("127.0.0.1", _settings.Port);
-					if (connected)
+
+					try
 					{
-						_logService.Info("EngineHost connected");
+						connected = _engine.connectToHost("127.0.0.1", _settings.Port);
+						if (connected)
+						{
+							_logService.Info("EngineHost connected");
+						}
+					}
+					catch (Exception ex)
+					{
+						_logService.Warning($"Failed to connect: {ex.Message}");
+						connected = false;
 					}
 				}
 

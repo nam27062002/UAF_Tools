@@ -39,10 +39,15 @@ namespace DANCustomTools.Views
                         if (_xmlPropertyGrid == null)
                             return;
 
+                        // Only reload grid when data comes from engine, not from user input
+                        // This prevents losing focus during editing
                         if (e2.PropertyName == nameof(PropertiesEditorViewModel.XmlDisplayText)
                             || e2.PropertyName == nameof(PropertiesEditorViewModel.HasData))
                         {
-                            vm.LoadXmlIntoHostedGrid(_xmlPropertyGrid);
+                            if (vm.IsLoadingFromEngine)
+                            {
+                                vm.LoadXmlIntoHostedGrid(_xmlPropertyGrid);
+                            }
                         }
                         else if (e2.PropertyName == nameof(PropertiesEditorViewModel.DataPath))
                         {

@@ -371,12 +371,12 @@ namespace DANCustomTools.ViewModels
                             if (selectedItem.Model is ObjectWithRefModel objectModel)
                             {
                                 SelectedObject = objectModel;
-                                LogService.Info($"🎯 Tree selection synced from PropertiesEditor: {objectModel.FriendlyName} (ref: {propertyModel.ObjectRef})");
+                                LogService.Info($"Tree selection synced from PropertiesEditor: {objectModel.FriendlyName} (ref: {propertyModel.ObjectRef})");
                             }
                         }
                         else
                         {
-                            LogService.Warning($"❌ Could not find object {propertyModel.ObjectRef} from PropertiesEditor update in scene tree");
+                            LogService.Warning($"Could not find object {propertyModel.ObjectRef} from PropertiesEditor update in scene tree");
                         }
                     }
                     catch (Exception ex)

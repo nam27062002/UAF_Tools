@@ -363,9 +363,9 @@ namespace DANCustomTools.Core.Services
         protected virtual void OnServiceStopping() { }
 
         /// <summary>
-        /// Override to customize the sleep interval in the network loop. Default is 100ms.
+        /// Override to customize the sleep interval in the network loop. Default is 10ms for fast disconnect detection.
         /// </summary>
-        protected virtual int GetNetworkLoopSleepInterval() => 100;
+        protected virtual int GetNetworkLoopSleepInterval() => 10;
 
         public virtual void Dispose()
         {

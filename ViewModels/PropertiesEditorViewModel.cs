@@ -23,6 +23,7 @@ namespace DANCustomTools.ViewModels
         private bool _suppressSend = false;
         private DateTime _lastSendUtc = DateTime.MinValue;
         private string _dataPath = string.Empty;
+        private bool _isLoadingFromEngine = false;
 
         public override string SubToolName => "Properties Editor";
 
@@ -77,6 +78,12 @@ namespace DANCustomTools.ViewModels
             private set => SetProperty(ref _dataPath, value);
         }
 
+        public bool IsLoadingFromEngine
+        {
+            get => _isLoadingFromEngine;
+            private set => SetProperty(ref _isLoadingFromEngine, value);
+        }
+
         public ICommand DumpToFileCommand { get; }
         public ICommand ClearPropertiesCommand { get; }
         public ICommand ToggleCategoryCommand { get; }
@@ -119,8 +126,21 @@ namespace DANCustomTools.ViewModels
         {
             App.Current?.Dispatcher.Invoke(() =>
             {
+                // Check if this is the same object and data hasn't changed
+                // If so, skip reload to avoid losing focus during user editing
+                bool isSameObject = CurrentProperty.ObjectRef == propertyModel.ObjectRef;
+                bool isSameData = string.Equals(CurrentProperty.XmlData?.Trim(), propertyModel.XmlData?.Trim(), StringComparison.Ordinal);
+
+                if (isSameObject && isSameData && HasData)
+                {
+                    LogService.Info($"Skipping properties update for object ref {propertyModel.ObjectRef} - data unchanged");
+                    return;
+                }
+
                 CurrentProperty = propertyModel;
                 _suppressSend = true;
+                IsLoadingFromEngine = true; // Signal that this is an engine update, not user input
+
                 XmlDisplayText = propertyModel.XmlData;
                 HasData = propertyModel.HasData;
 
@@ -146,6 +166,8 @@ namespace DANCustomTools.ViewModels
                 }
 
                 LogService.Info($"Properties updated for object ref: {propertyModel.ObjectRef}");
+
+                IsLoadingFromEngine = false; // Reset flag after update
                 _suppressSend = false;
             });
         }
