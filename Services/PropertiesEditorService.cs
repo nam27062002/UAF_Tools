@@ -11,8 +11,6 @@ namespace DANCustomTools.Services
     public class PropertiesEditorService : EnginePluginServiceBase, IPropertiesEditorService
     {
         private string _dataPath = string.Empty;
-
-        // Plugin messages
         private const string MSG_PROPERTIES = "Properties";
         private const string MSG_DUMP_TO_FILE = "DumpToFile";
         private const string MSG_CLEAR = "Clear";
@@ -35,8 +33,6 @@ namespace DANCustomTools.Services
 
         public void RequestObjectProperties(uint objectRef)
         {
-            // Properties are automatically sent when object is selected in SceneExplorer
-            // This method can be used for explicit requests if needed
             LogService.Info($"Requesting properties for object ref: {objectRef}");
         }
 
@@ -76,7 +72,7 @@ namespace DANCustomTools.Services
             LogService.Info($"Requested dump to file: {fileName}");
         }
 
-        protected override int GetNetworkLoopSleepInterval() => 1000; // PropertiesEditor uses 1000ms instead of 100ms
+        protected override int GetNetworkLoopSleepInterval() => 1000;
 
         protected override void OnPluginRegistered()
         {

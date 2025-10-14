@@ -43,6 +43,13 @@ namespace DANCustomTools.ViewModels
         private List<ActorModel> _originalActors = new();
         private bool _isComponentFilterEnabled;
 
+    // Selection loop prevention / state flags
+    private bool _isProcessingRuntimeSelection = false; // true while applying a runtime-originated selection
+    private bool _isProcessingPropertiesSelection = false; // true while applying a properties-originated selection
+    private DateTime _lastRuntimeSelectionTime = DateTime.MinValue; // timestamp of last runtime selection applied
+    private uint _lastRequestedEngineSelectionRef = uint.MaxValue; // last object ref we explicitly sent to engine
+    private const int PropertiesSelectionDebounceMs = 300; // ignore differing properties selection within this window after runtime selection
+
         private ObjectTypeFilter _currentObjectTypeFilter = ObjectTypeFilter.All;
         private Dictionary<SceneTreeItemViewModel, (SceneTreeItemViewModel? actorsGroup, SceneTreeItemViewModel? frisesGroup)> _originalSceneGroups = new();
         private System.Threading.Timer? _filterThrottleTimer;
@@ -271,10 +278,23 @@ namespace DANCustomTools.ViewModels
             {
                 try
                 {
+                    if (_isProcessingRuntimeSelection)
+                    {
+                        LogService.Info("⚠️ Runtime selection re-entered; ignoring nested call.");
+                        return;
+                    }
+
+                    if (SelectedObject is ObjectWithRefModel existing && existing.ObjectRef == objectRef)
+                    {
+                        LogService.Info("🔁 Runtime selection matches current SelectedObject; ignoring to prevent loop.");
+                        return;
+                    }
+
+                    _isProcessingRuntimeSelection = true;
                     LogService.Info($"🔍 Searching for object {objectRef} in scene tree with {SceneTreeItems.Count} root items");
 
                     var selectedItem = FindTreeItemByObjectRef(SceneTreeItems, objectRef);
-                    if (selectedItem != null)
+                        if (selectedItem != null)
                     {
                         LogService.Info($"✅ Found object {objectRef} in scene tree!");
 
@@ -300,10 +320,15 @@ namespace DANCustomTools.ViewModels
                         LogService.Warning($"❌ Could not find object with ref {objectRef} in scene tree (total items: {CountAllTreeItems()})");
                         LogAllTreeItemRefs();
                     }
+                    _lastRuntimeSelectionTime = DateTime.UtcNow;
                 }
                 catch (Exception ex)
                 {
                     LogService.Error($"💥 Failed to sync tree selection with runtime", ex);
+                }
+                finally
+                {
+                    _isProcessingRuntimeSelection = false;
                 }
             });
         }
@@ -319,6 +344,27 @@ namespace DANCustomTools.ViewModels
                 {
                     try
                     {
+                        // Debounce: if runtime selection just happened very recently and this refers to a different object, ignore to avoid loop
+                        if ((DateTime.UtcNow - _lastRuntimeSelectionTime).TotalMilliseconds < PropertiesSelectionDebounceMs &&
+                            SelectedObject is ObjectWithRefModel so && so.ObjectRef != propertyModel.ObjectRef)
+                        {
+                            LogService.Info($"⏱️ Ignoring properties selection {propertyModel.ObjectRef} due to recent runtime selection {so.ObjectRef}");
+                            return;
+                        }
+
+                        if (_isProcessingPropertiesSelection)
+                        {
+                            LogService.Info("⚠️ Re-entrant properties selection ignored");
+                            return;
+                        }
+
+                        if (SelectedObject is ObjectWithRefModel existing && existing.ObjectRef == propertyModel.ObjectRef)
+                        {
+                            LogService.Info("🔁 Properties selection matches current; ignoring");
+                            return;
+                        }
+
+                        _isProcessingPropertiesSelection = true;
                         var selectedItem = FindTreeItemByObjectRef(SceneTreeItems, propertyModel.ObjectRef);
                         if (selectedItem != null)
                         {
@@ -347,6 +393,10 @@ namespace DANCustomTools.ViewModels
                     catch (Exception ex)
                     {
                         LogService.Error($"Failed to sync selection from PropertiesEditor update", ex);
+                    }
+                    finally
+                    {
+                        _isProcessingPropertiesSelection = false;
                     }
                 });
             }
@@ -917,14 +967,28 @@ namespace DANCustomTools.ViewModels
                 case SceneTreeItemType.Actor:
                     if (selectedItem.Model is ActorModel actor)
                     {
-                        SelectedObject = actor;
-                        LogService.Info($"Selected actor: {actor.FriendlyName}");
-
-                        PropertiesEditor.ViewModel?.LoadObjectProperties(actor);
-
-                        if (actor.IsOnline)
+                        // Prevent loops: if runtime or properties selection is being applied, do not echo selection back to engine
+                        if (_isProcessingRuntimeSelection || _isProcessingPropertiesSelection)
                         {
-                            _sceneService.SelectObjects(new[] { actor });
+                            LogService.Info("🔄 Skipping engine select (actor) due to internal selection processing");
+                        }
+                        else
+                        {
+                            if (SelectedObject is ObjectWithRefModel ex && ex.ObjectRef == actor.ObjectRef)
+                            {
+                                LogService.Info("🔁 Actor already current; skipping duplicate engine select");
+                            }
+                            else
+                            {
+                                SelectedObject = actor;
+                                LogService.Info($"Selected actor: {actor.FriendlyName}");
+                                PropertiesEditor.ViewModel?.LoadObjectProperties(actor);
+                                if (actor.IsOnline)
+                                {
+                                    _lastRequestedEngineSelectionRef = actor.ObjectRef;
+                                    _sceneService.SelectObjects(new[] { actor });
+                                }
+                            }
                         }
                     }
                     break;
@@ -932,14 +996,27 @@ namespace DANCustomTools.ViewModels
                 case SceneTreeItemType.Frise:
                     if (selectedItem.Model is FriseModel frise)
                     {
-                        SelectedObject = frise;
-                        LogService.Info($"Selected frise: {frise.FriendlyName}");
-
-                        PropertiesEditor.ViewModel?.LoadObjectProperties(frise);
-
-                        if (frise.IsOnline)
+                        if (_isProcessingRuntimeSelection || _isProcessingPropertiesSelection)
                         {
-                            _sceneService.SelectObjects(new[] { frise });
+                            LogService.Info("🔄 Skipping engine select (frise) due to internal selection processing");
+                        }
+                        else
+                        {
+                            if (SelectedObject is ObjectWithRefModel ex && ex.ObjectRef == frise.ObjectRef)
+                            {
+                                LogService.Info("🔁 Frise already current; skipping duplicate engine select");
+                            }
+                            else
+                            {
+                                SelectedObject = frise;
+                                LogService.Info($"Selected frise: {frise.FriendlyName}");
+                                PropertiesEditor.ViewModel?.LoadObjectProperties(frise);
+                                if (frise.IsOnline)
+                                {
+                                    _lastRequestedEngineSelectionRef = frise.ObjectRef;
+                                    _sceneService.SelectObjects(new[] { frise });
+                                }
+                            }
                         }
                     }
                     break;

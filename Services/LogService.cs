@@ -21,10 +21,8 @@ namespace DANCustomTools.Services
                     logMessage += $"\nException: {ex}";
                 }
 
-                // Log to debug console
                 Debug.WriteLine(logMessage);
 
-                // Log to file with a lock to prevent race conditions
                 lock (_lock)
                 {
                     File.AppendAllText(_logFilePath, logMessage + "\n");

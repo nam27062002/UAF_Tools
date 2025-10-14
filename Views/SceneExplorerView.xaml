@@ -20,11 +20,13 @@
 
         <!-- Enhanced TreeView Item Style -->
         <Style x:Key="MaterialTreeViewItemStyle" TargetType="TreeViewItem">
-            <Setter Property="IsExpanded" Value="True"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="Margin" Value="0,1"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
+            <!-- Two-way bind selection & expansion state to ViewModel -->
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TreeViewItem">

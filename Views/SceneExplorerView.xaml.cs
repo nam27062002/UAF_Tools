@@ -59,7 +59,8 @@ namespace DANCustomTools.Views
 
         private void OnScrollToItemRequested(object? sender, SceneTreeItemViewModel item)
         {
-            ScrollToTreeViewItem(item);
+            // Queue scroll request to allow layout/containers generation
+            QueueScrollToItem(item);
         }
 
         private void SceneExplorerView_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -404,60 +405,94 @@ namespace DANCustomTools.Views
             item.IsExpanded = false;
         }
 
-        private void ScrollToTreeViewItem(SceneTreeItemViewModel item)
+        // Pending scroll state
+        private SceneTreeItemViewModel? _pendingScrollItem;
+        private int _pendingScrollAttempts;
+        private const int MaxScrollAttempts = 8;
+        private bool _layoutHandlerAttached = false;
+
+        private void QueueScrollToItem(SceneTreeItemViewModel item)
         {
-            try
+            _pendingScrollItem = item;
+            _pendingScrollAttempts = 0;
+            AttachLayoutUpdatedHandler();
+            // Kick off first attempt via dispatcher to let any recent changes settle
+            Dispatcher.BeginInvoke(new Action(AttemptScroll), DispatcherPriority.Background);
+        }
+
+        private void AttachLayoutUpdatedHandler()
+        {
+            if (_layoutHandlerAttached) return;
+            this.LayoutUpdated += SceneExplorerView_LayoutUpdated;
+            _layoutHandlerAttached = true;
+        }
+
+        private void DetachLayoutUpdatedHandler()
+        {
+            if (!_layoutHandlerAttached) return;
+            this.LayoutUpdated -= SceneExplorerView_LayoutUpdated;
+            _layoutHandlerAttached = false;
+        }
+
+        private void SceneExplorerView_LayoutUpdated(object? sender, EventArgs e)
+        {
+            // Each layout update while we have a pending item triggers another attempt (debounced by attempt counter)
+            if (_pendingScrollItem != null)
             {
-                System.Diagnostics.Debug.WriteLine($"[Scroll] Attempting to scroll to: {item.DisplayName}");
-
-                // Force update layout first
-                SceneTreeView.UpdateLayout();
-
-                // Find the TreeViewItem with multiple attempts
-                TreeViewItem? treeViewItem = null;
-                for (int attempt = 0; attempt < 3; attempt++)
-                {
-                    treeViewItem = FindTreeViewItemRecursive(SceneTreeView, item);
-                    if (treeViewItem != null)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[Scroll] Found TreeViewItem on attempt {attempt + 1}");
-                        break;
-                    }
-
-                    // Wait a bit and update layout again
-                    System.Diagnostics.Debug.WriteLine($"[Scroll] Not found, attempt {attempt + 1}, updating layout...");
-                    SceneTreeView.UpdateLayout();
-                    System.Threading.Thread.Sleep(50);
-                }
-
-                if (treeViewItem != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[Scroll] Bringing item into view...");
-                    treeViewItem.BringIntoView();
-
-                    // Center the item with a delay
-                    Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        try
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[Scroll] Centering item...");
-                            CenterTreeViewItem(treeViewItem);
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[Scroll] Failed to center: {ex.Message}");
-                        }
-                    }), DispatcherPriority.Loaded);
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"[Scroll] ERROR: Could not find TreeViewItem for {item.DisplayName}");
-                }
+                AttemptScroll();
             }
-            catch (Exception ex)
+            else
             {
-                System.Diagnostics.Debug.WriteLine($"[Scroll] Exception: {ex.Message}");
+                DetachLayoutUpdatedHandler();
             }
+        }
+
+        private void AttemptScroll()
+        {
+            if (_pendingScrollItem == null) return;
+
+            if (_pendingScrollAttempts >= MaxScrollAttempts)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Scroll] Gave up after {_pendingScrollAttempts} attempts for {_pendingScrollItem.DisplayName}");
+                _pendingScrollItem = null;
+                DetachLayoutUpdatedHandler();
+                return;
+            }
+
+            _pendingScrollAttempts++;
+
+            // Ensure containers exist
+            SceneTreeView.UpdateLayout();
+
+            var treeViewItem = FindTreeViewItemRecursive(SceneTreeView, _pendingScrollItem);
+            if (treeViewItem == null)
+            {
+                // Schedule another attempt shortly
+                Dispatcher.BeginInvoke(new Action(AttemptScroll), DispatcherPriority.Background);
+                return;
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[Scroll] Found item on attempt {_pendingScrollAttempts}: {_pendingScrollItem.DisplayName}");
+
+            // Bring into view first
+            treeViewItem.BringIntoView();
+
+            // Center after render pass
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    CenterTreeViewItem(treeViewItem);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Scroll] Center failed: {ex.Message}");
+                }
+            }), DispatcherPriority.Loaded);
+
+            // Done
+            _pendingScrollItem = null;
+            DetachLayoutUpdatedHandler();
         }
 
         private TreeViewItem? FindTreeViewItemRecursive(ItemsControl container, object item)
