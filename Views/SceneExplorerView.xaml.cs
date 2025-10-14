@@ -59,7 +59,6 @@ namespace DANCustomTools.Views
 
         private void OnScrollToItemRequested(object? sender, SceneTreeItemViewModel item)
         {
-            // Queue scroll request to allow layout/containers generation
             QueueScrollToItem(item);
         }
 
@@ -405,7 +404,6 @@ namespace DANCustomTools.Views
             item.IsExpanded = false;
         }
 
-        // Pending scroll state
         private SceneTreeItemViewModel? _pendingScrollItem;
         private int _pendingScrollAttempts;
         private const int MaxScrollAttempts = 8;
@@ -416,7 +414,6 @@ namespace DANCustomTools.Views
             _pendingScrollItem = item;
             _pendingScrollAttempts = 0;
             AttachLayoutUpdatedHandler();
-            // Kick off first attempt via dispatcher to let any recent changes settle
             Dispatcher.BeginInvoke(new Action(AttemptScroll), DispatcherPriority.Background);
         }
 
@@ -436,7 +433,6 @@ namespace DANCustomTools.Views
 
         private void SceneExplorerView_LayoutUpdated(object? sender, EventArgs e)
         {
-            // Each layout update while we have a pending item triggers another attempt (debounced by attempt counter)
             if (_pendingScrollItem != null)
             {
                 AttemptScroll();
@@ -467,24 +463,20 @@ namespace DANCustomTools.Views
             var treeViewItem = FindTreeViewItemRecursive(SceneTreeView, _pendingScrollItem);
             if (treeViewItem == null)
             {
-                // Schedule another attempt shortly
                 Dispatcher.BeginInvoke(new Action(AttemptScroll), DispatcherPriority.Background);
                 return;
             }
 
             System.Diagnostics.Debug.WriteLine($"[Scroll] Found item on attempt {_pendingScrollAttempts}: {_pendingScrollItem.DisplayName}");
 
-            // Prefer focusing (lets WPF perform its own initial BringIntoView once)
             if (!treeViewItem.IsFocused)
             {
                 treeViewItem.Focus();
                 System.Diagnostics.Debug.WriteLine("[Scroll] Focused item (WPF may auto BringIntoView)");
             }
 
-            // Schedule centering with retry logic (after focus/layout settles)
             ScheduleCentering(treeViewItem, 0);
 
-            // Done
             _pendingScrollItem = null;
             DetachLayoutUpdatedHandler();
         }
@@ -537,7 +529,6 @@ namespace DANCustomTools.Views
                 var before = scrollViewer.VerticalOffset;
                 if (Math.Abs(targetOffset - before) < 2)
                 {
-                    // Already close enough; still schedule stabilization in case layout shifts
                     ScheduleFinalCenter(scrollViewer, item);
                     return true;
                 }
@@ -584,21 +575,18 @@ namespace DANCustomTools.Views
 
         private (double targetOffset, double positionY, double viewportHeight, double itemHeight) CalculateCenterOffset(ScrollViewer scrollViewer, TreeViewItem item)
         {
-            // Try to get panel hosting items for more stable coordinate space
             var itemsHost = (FindItemsHostPanel(scrollViewer.Content as DependencyObject) ?? (DependencyObject)scrollViewer) as UIElement;
             Point itemPoint;
             try
             {
                 if (itemsHost == null)
                 {
-                    // Fallback to scrollViewer if casting failed unexpectedly
                     itemsHost = scrollViewer;
                 }
                 itemPoint = item.TranslatePoint(new Point(0, 0), itemsHost);
             }
             catch
             {
-                // fallback
                 var transform = item.TransformToAncestor(scrollViewer);
                 itemPoint = transform.Transform(new Point(0, 0));
             }
@@ -628,7 +616,6 @@ namespace DANCustomTools.Views
         {
             if (container == null) return null;
 
-            // Check if this container has the item directly
             var directItem = container.ItemContainerGenerator.ContainerFromItem(item) as TreeViewItem;
             if (directItem != null)
             {
@@ -636,27 +623,23 @@ namespace DANCustomTools.Views
                 return directItem;
             }
 
-            // Recursively search through all children
             foreach (var childItem in container.Items)
             {
                 var childContainer = container.ItemContainerGenerator.ContainerFromItem(childItem) as TreeViewItem;
                 if (childContainer != null)
                 {
-                    // Make sure the child container is expanded and containers are generated
                     if (!childContainer.IsExpanded)
                     {
                         childContainer.IsExpanded = true;
                         childContainer.UpdateLayout();
                     }
 
-                    // Check if this child is the item we're looking for
                     if (childItem == item)
                     {
                         System.Diagnostics.Debug.WriteLine($"[FindItem] Found child item: {item}");
                         return childContainer;
                     }
 
-                    // Search recursively in children
                     var result = FindTreeViewItemRecursive(childContainer, item);
                     if (result != null)
                     {
