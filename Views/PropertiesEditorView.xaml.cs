@@ -11,7 +11,6 @@ namespace DANCustomTools.Views
         public PropertiesEditorView()
         {
             InitializeComponent();
-            // Wire WinForms XMLPropertyGrid events to ViewModel when available
             Loaded += (s, e) =>
             {
                 EnsureWindowsFormsHost();
@@ -39,8 +38,6 @@ namespace DANCustomTools.Views
                         if (_xmlPropertyGrid == null)
                             return;
 
-                        // Only reload grid when data comes from engine, not from user input
-                        // This prevents losing focus during editing
                         if (e2.PropertyName == nameof(PropertiesEditorViewModel.XmlDisplayText)
                             || e2.PropertyName == nameof(PropertiesEditorViewModel.HasData))
                         {
@@ -77,11 +74,9 @@ namespace DANCustomTools.Views
             }
             catch (System.Xml.XmlException xmlEx)
             {
-                // Log the XML serialization error and try to sanitize
                 System.Diagnostics.Debug.WriteLine($"XML serialization error from XMLPropertyGrid: {xmlEx.Message}");
                 System.Diagnostics.Debug.WriteLine($"Problematic XML: {e.xmlText}");
-
-                // Try to sanitize the XML by escaping invalid characters
+                
                 var sanitizedXml = SanitizeXmlText(e.xmlText);
                 try
                 {

@@ -6,9 +6,6 @@ using System.Windows;
 
 namespace DANCustomTools;
 
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
 public partial class MainWindow : Window
 {
     private MainViewModel? _viewModel;
@@ -16,15 +13,12 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-
-        // Set DataContext using DI container
         if (App.ServiceProvider != null)
         {
             _viewModel = App.ServiceProvider.GetRequiredService<MainViewModel>();
             DataContext = _viewModel;
         }
 
-        // Handle window closing
         this.Closing += MainWindow_Closing;
     }
 
@@ -32,16 +26,36 @@ public partial class MainWindow : Window
     {
         try
         {
-            // Dispose of the ViewModel which should dispose all services
-            _viewModel?.Dispose();
+            System.Diagnostics.Debug.WriteLine("MainWindow closing - starting cleanup...");
 
-            // Force application shutdown
-            Application.Current.Shutdown();
+            _viewModel?.Dispose();
+            _viewModel = null;
+
+            System.Diagnostics.Debug.WriteLine("ViewModel disposed");
+
+            DataContext = null;
+
+            System.Diagnostics.Debug.WriteLine("DataContext cleared");
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Error during window close: {ex.Message}");
-            // Force exit even if there are errors
+        }
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        base.OnClosed(e);
+
+        try
+        {
+            System.Diagnostics.Debug.WriteLine("MainWindow closed - forcing app shutdown");
+            
+            Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error during shutdown: {ex.Message}");
             Environment.Exit(0);
         }
     }

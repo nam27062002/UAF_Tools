@@ -23,7 +23,6 @@ namespace DANCustomTools
             _host = CreateHostBuilder(e.Args).Build();
             ServiceProvider = _host.Services;
 
-            // Ensure tools are initialized
             var toolInitializer = ServiceProvider.GetRequiredService<IToolInitializer>();
             if (!toolInitializer.IsInitialized)
             {
@@ -58,20 +57,15 @@ namespace DANCustomTools
 
         private static void ConfigureCoreServices(IServiceCollection services)
         {
-            // Core Services - Register in dependency order
             services.AddSingleton<ILogService, ConsoleLogService>();
             services.AddSingleton<IEngineHostService, EngineHostService>();
 
-            // Engine Integration Service (new)
             services.AddSingleton<IEngineIntegrationService, EngineIntegrationService>();
 
-            // Component Management Service (new)
             services.AddSingleton<IComponentManagementService, ComponentManagementService>();
 
-            // Component Filter Service
             services.AddSingleton<IComponentFilterService, ComponentFilterService>();
 
-            // Tool Services
             services.AddSingleton<ISceneExplorerService, SceneExplorerService>();
             services.AddSingleton<IPropertiesEditorService, PropertiesEditorService>();
             services.AddSingleton<IActorCreateService, ActorCreateService>();
@@ -79,14 +73,11 @@ namespace DANCustomTools
 
         private static void ConfigureToolFramework(IServiceCollection services)
         {
-            // Tool Framework Core
             services.AddSingleton<IToolManager, ToolManager>();
             services.AddSingleton<IToolContext, ToolContext>();
 
-            // Tool Registration and Configuration
             services.AddSingleton<IToolConfigurationService, ToolConfigurationService>();
 
-            // Post-configuration step - this will run after container is built
             services.AddSingleton<IToolInitializer>(serviceProvider =>
             {
                 var toolConfig = serviceProvider.GetRequiredService<IToolConfigurationService>();
@@ -98,7 +89,6 @@ namespace DANCustomTools
 
         private static void ConfigureViewModels(IServiceCollection services)
         {
-            // ViewModels - Register as Transient for fresh instances
             services.AddTransient<MainViewModel>();
             services.AddTransient<EditorMainViewModel>();
             services.AddTransient<AssetsCookerMainViewModel>();
@@ -110,11 +100,19 @@ namespace DANCustomTools
         {
             try
             {
-                // Dispose of the host which will dispose all registered services
-                _host?.Dispose();
+                System.Diagnostics.Debug.WriteLine("App OnExit - starting cleanup...");
 
-                // Clear service provider reference
+                if (_host != null)
+                {
+                    System.Diagnostics.Debug.WriteLine("Disposing DI host...");
+                    _host.Dispose();
+                    _host = null;
+                    System.Diagnostics.Debug.WriteLine("DI host disposed");
+                }
+
                 ServiceProvider = null;
+
+                System.Diagnostics.Debug.WriteLine("App cleanup completed");
 
                 base.OnExit(e);
             }
@@ -124,16 +122,11 @@ namespace DANCustomTools
             }
             finally
             {
-                // Force process termination if still running after 2 seconds
-                System.Threading.Tasks.Task.Run(async () =>
+                var forceExitTimer = new System.Threading.Timer(_ =>
                 {
-                    await System.Threading.Tasks.Task.Delay(2000);
-                    if (!System.Environment.HasShutdownStarted)
-                    {
-                        System.Diagnostics.Debug.WriteLine("Forcing process termination");
-                        System.Environment.Exit(0);
-                    }
-                });
+                    System.Diagnostics.Debug.WriteLine("Force terminating process...");
+                    Environment.Exit(0);
+                }, null, TimeSpan.FromSeconds(1), Timeout.InfiniteTimeSpan);
             }
         }
     }

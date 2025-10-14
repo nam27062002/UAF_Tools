@@ -163,8 +163,47 @@ namespace DANCustomTools.ViewModels
 
         public override void Dispose()
         {
-            _toolManager.CurrentMainToolChanged -= OnCurrentMainToolChanged;
-            base.Dispose();
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("MainViewModel disposing...");
+
+                // Unsubscribe from events
+                _toolManager.CurrentMainToolChanged -= OnCurrentMainToolChanged;
+
+                // Dispose current tool view model
+                if (_currentToolViewModel is IDisposable disposableViewModel)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Disposing current tool: {_currentToolViewModel.GetType().Name}");
+                    disposableViewModel.Dispose();
+                }
+
+                // Dispose all tools
+                foreach (var tool in MainTools)
+                {
+                    if (tool is IDisposable disposableTool)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Disposing tool: {tool.GetType().Name}");
+                        disposableTool.Dispose();
+                    }
+                }
+
+                // Dispose tool manager
+                if (_toolManager is IDisposable disposableManager)
+                {
+                    System.Diagnostics.Debug.WriteLine("Disposing ToolManager");
+                    disposableManager.Dispose();
+                }
+
+                System.Diagnostics.Debug.WriteLine("MainViewModel disposed successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error disposing MainViewModel: {ex.Message}");
+            }
+            finally
+            {
+                base.Dispose();
+            }
         }
     }
 }

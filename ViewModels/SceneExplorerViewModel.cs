@@ -34,6 +34,9 @@ namespace DANCustomTools.ViewModels
         // Arguments
         private readonly string[] _arguments;
 
+        // Events
+        public event EventHandler<SceneTreeItemViewModel>? ScrollToItemRequested;
+
         // UI Properties
         private ObservableCollection<SceneTreeItemViewModel> _sceneTreeItems = new();
         private PropertiesEditorView _propertiesEditor = null!;
@@ -326,6 +329,9 @@ namespace DANCustomTools.ViewModels
                             SelectedObject = objectModel;
                             LogService.Info($"🎯 Tree selection synced with runtime: {objectModel.FriendlyName} (ref: {objectRef})");
                         }
+
+                        // Request scroll to center the selected item
+                        RequestScrollToItem(selectedItem);
                     }
                     else
                     {
@@ -373,6 +379,9 @@ namespace DANCustomTools.ViewModels
                                 SelectedObject = objectModel;
                                 LogService.Info($"Tree selection synced from PropertiesEditor: {objectModel.FriendlyName} (ref: {propertyModel.ObjectRef})");
                             }
+
+                            // Request scroll to center the selected item
+                            RequestScrollToItem(selectedItem);
                         }
                         else
                         {
@@ -412,6 +421,26 @@ namespace DANCustomTools.ViewModels
         private void UpdateConnectionStatus()
         {
             IsConnected = _sceneService.IsConnected;
+        }
+
+        private void RequestScrollToItem(SceneTreeItemViewModel item)
+        {
+            // Use a small delay to ensure the tree view has updated its layout
+            Task.Delay(100).ContinueWith(_ =>
+            {
+                App.Current?.Dispatcher.Invoke(() =>
+                {
+                    try
+                    {
+                        ScrollToItemRequested?.Invoke(this, item);
+                        LogService.Info($"📜 Requested scroll to item: {item.DisplayName}");
+                    }
+                    catch (Exception ex)
+                    {
+                        LogService.Error("Failed to request scroll to item", ex);
+                    }
+                });
+            });
         }
 
 
@@ -1450,31 +1479,27 @@ namespace DANCustomTools.ViewModels
             {
                 var startTime = DateTime.Now;
 
+                // Create a HashSet of actors to show for fast lookup
+                var actorsToShowSet = new HashSet<ActorModel>(actorsToShow);
+
                 // Use async dispatcher to avoid blocking UI thread
                 App.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    // Batch updates to minimize UI notifications
-                    using (var deferRefresh = DeferTreeViewRefresh())
+                    // Update visibility of actors without rebuilding the tree
+                    foreach (var sceneItem in SceneTreeItems)
                     {
-                        // Find the scene tree items and update their actor groups
-                        foreach (var sceneItem in SceneTreeItems)
-                        {
-                            UpdateSceneActorsGroup(sceneItem, actorsToShow);
-                        }
+                        UpdateActorVisibility(sceneItem, actorsToShowSet);
                     }
 
-                    // Single UI refresh after all updates
-                    OnPropertyChanged(nameof(SceneTreeItems));
-
                     var duration = (DateTime.Now - startTime).TotalMilliseconds;
-                    LogService.Info($"Scene tree rebuilt with {actorsToShow.Count} actors in {duration:F0}ms");
+                    LogService.Info($"Actor visibility updated for {actorsToShow.Count} actors in {duration:F0}ms");
                 }));
 
-                LogService.Info($"Scheduled scene tree rebuild with {actorsToShow.Count} actors");
+                LogService.Info($"Scheduled actor visibility update for {actorsToShow.Count} actors");
             }
             catch (Exception ex)
             {
-                LogService.Error("Failed to rebuild scene tree with filtered actors", ex);
+                LogService.Error("Failed to update actor visibility", ex);
             }
         }
 
@@ -1494,6 +1519,26 @@ namespace DANCustomTools.ViewModels
             public void Dispose()
             {
                 // Placeholder for batched refresh logic if needed
+            }
+        }
+
+        private void UpdateActorVisibility(SceneTreeItemViewModel sceneItem, HashSet<ActorModel> actorsToShowSet)
+        {
+            // Recursively update visibility for all actors in the tree
+            foreach (var child in sceneItem.Children)
+            {
+                if (child.ItemType == SceneTreeItemType.Actor && child.Model is ActorModel actor)
+                {
+                    // Update visibility based on whether this actor should be shown
+                    child.IsVisible = actorsToShowSet.Contains(actor);
+                }
+                else if (child.ItemType == SceneTreeItemType.ActorSet || 
+                         child.ItemType == SceneTreeItemType.FriseSet || 
+                         child.ItemType == SceneTreeItemType.Scene)
+                {
+                    // Recursively update children
+                    UpdateActorVisibility(child, actorsToShowSet);
+                }
             }
         }
 
@@ -1608,6 +1653,21 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
+                LogService?.Info("Disposing SceneExplorerViewModel...");
+
+                // Unsubscribe from service events FIRST to prevent any callbacks during disposal
+                try
+                {
+                    _sceneService.OnlineSceneTreeUpdated -= OnOnlineSceneTreeUpdated;
+                    _sceneService.OfflineSceneTreesUpdated -= OnOfflineSceneTreesUpdated;
+                    _sceneService.ObjectSelectedFromRuntime -= OnObjectSelectedFromRuntime;
+                    _propertiesService.PropertiesUpdated -= OnPropertiesUpdated;
+                }
+                catch (Exception ex)
+                {
+                    LogService?.Warning($"Error unsubscribing from events: {ex.Message}");
+                }
+
                 // Dispose throttle timer safely
                 lock (_filterLock)
                 {
@@ -1622,11 +1682,17 @@ namespace DANCustomTools.ViewModels
                     component.SelectionChanged -= OnComponentSelectionChanged;
                 }
 
-                _sceneService.OnlineSceneTreeUpdated -= OnOnlineSceneTreeUpdated;
-                _sceneService.OfflineSceneTreesUpdated -= OnOfflineSceneTreesUpdated;
-                _sceneService.ObjectSelectedFromRuntime -= OnObjectSelectedFromRuntime;
-                _propertiesService.PropertiesUpdated -= OnPropertiesUpdated;
-                PropertiesEditor?.ViewModel?.Dispose();
+                // Dispose PropertiesEditor
+                try
+                {
+                    PropertiesEditor?.ViewModel?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    LogService?.Warning($"Error disposing PropertiesEditor: {ex.Message}");
+                }
+
+                LogService?.Info("SceneExplorerViewModel disposed successfully");
             }
             catch (Exception ex)
             {

@@ -117,6 +117,10 @@
                         </Grid>
 
                         <ControlTemplate.Triggers>
+                            <!-- Hide item if IsVisible is False -->
+                            <DataTrigger Binding="{Binding IsVisible}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
                             <Trigger Property="IsExpanded" Value="False">
                                 <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
