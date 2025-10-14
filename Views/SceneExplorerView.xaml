@@ -127,10 +127,25 @@
                             <Trigger Property="HasItems" Value="False">
                                 <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
                             </Trigger>
+                            <!-- Enhanced Selection Highlight -->
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ContentBorder" Property="Background" Value="#E3F2FD"/>
-                                <Setter TargetName="ContentBorder" Property="BorderBrush" Value="#2196F3"/>
-                                <Setter TargetName="ContentBorder" Property="BorderThickness" Value="1"/>
+                                <Setter TargetName="ContentBorder" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#2196F3" Offset="0"/>
+                                            <GradientStop Color="#64B5F6" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="ContentBorder" Property="BorderBrush" Value="#1976D2"/>
+                                <Setter TargetName="ContentBorder" Property="BorderThickness" Value="2"/>
+                                <Setter TargetName="PART_Header" Property="TextElement.Foreground" Value="White"/>
+                                <Setter TargetName="PART_Header" Property="TextElement.FontWeight" Value="SemiBold"/>
+                                <Setter TargetName="ContentBorder" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#2196F3" BlurRadius="8" ShadowDepth="0" Opacity="0.6"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="ContentBorder" Property="Background" Value="#F5F5F5"/>
@@ -140,7 +155,19 @@
                                     <Condition Property="IsSelected" Value="True"/>
                                     <Condition Property="IsMouseOver" Value="True"/>
                                 </MultiTrigger.Conditions>
-                                <Setter TargetName="ContentBorder" Property="Background" Value="#BBDEFB"/>
+                                <Setter TargetName="ContentBorder" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#1976D2" Offset="0"/>
+                                            <GradientStop Color="#42A5F5" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="ContentBorder" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#1976D2" BlurRadius="12" ShadowDepth="0" Opacity="0.8"/>
+                                    </Setter.Value>
+                                </Setter>
                             </MultiTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

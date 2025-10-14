@@ -26,52 +26,41 @@ namespace DANCustomTools.ViewModels
 
     public class SceneExplorerViewModel : SubToolViewModelBase, IDisposable
     {
-        // Dependencies
         private readonly ISceneExplorerService _sceneService;
         private readonly IPropertiesEditorService _propertiesService;
         private readonly IComponentFilterService _componentFilterService;
 
-        // Arguments
         private readonly string[] _arguments;
 
-        // Events
         public event EventHandler<SceneTreeItemViewModel>? ScrollToItemRequested;
 
-        // UI Properties
         private ObservableCollection<SceneTreeItemViewModel> _sceneTreeItems = new();
         private PropertiesEditorView _propertiesEditor = null!;
         private ObjectWithRefModel? _selectedObject;
 
-        // Component filtering properties
         private ObservableCollection<ComponentFilterModel> _availableComponents = new();
         private HashSet<string> _selectedComponents = new(StringComparer.OrdinalIgnoreCase);
         private List<ActorModel> _originalActors = new();
         private bool _isComponentFilterEnabled;
 
-        // Object type filtering
         private ObjectTypeFilter _currentObjectTypeFilter = ObjectTypeFilter.All;
         private Dictionary<SceneTreeItemViewModel, (SceneTreeItemViewModel? actorsGroup, SceneTreeItemViewModel? frisesGroup)> _originalSceneGroups = new();
-        // Throttling mechanism for filter operations
         private System.Threading.Timer? _filterThrottleTimer;
         private ObjectTypeFilter? _pendingFilter;
         private readonly object _filterLock = new object();
 
         public override string SubToolName => "Scene Explorer";
 
-        // Context menu commands
         public ICommand DuplicateCommand { get; }
         public ICommand DeleteCommand { get; }
         public ICommand RenameCommand { get; }
 
-        // Toolbar commands
         public ICommand RefreshCommand { get; }
         public ICommand SelectInEngineCommand { get; }
 
-        // Component filter commands
         public ICommand ClearFiltersCommand { get; }
         public ICommand UnselectAllFiltersCommand { get; }
 
-        // Object type filter commands
         public ICommand ShowAllObjectsCommand { get; }
         public ICommand ShowActorsOnlyCommand { get; }
         public ICommand ShowFrisesOnlyCommand { get; }
@@ -94,7 +83,6 @@ namespace DANCustomTools.ViewModels
             private set => SetProperty(ref _selectedObject, value);
         }
 
-        // Component filtering properties
         public ObservableCollection<ComponentFilterModel> AvailableComponents
         {
             get => _availableComponents;
@@ -145,43 +133,33 @@ namespace DANCustomTools.ViewModels
             _componentFilterService = componentFilterService ?? throw new ArgumentNullException(nameof(componentFilterService));
             _arguments = ["--port", "12345"]; // Default arguments
 
-            // Initialize component filtering
             AvailableComponents = new ObservableCollection<ComponentFilterModel>();
             SelectedComponents = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            // Initialize context menu commands
             DuplicateCommand = new AsyncRelayCommand(ExecuteDuplicateAsync, CanExecuteDuplicate);
             DeleteCommand = new AsyncRelayCommand(ExecuteDeleteAsync, CanExecuteDelete);
             RenameCommand = new RelayCommand<string>(ExecuteRename, CanExecuteRename);
 
-            // Initialize toolbar commands
             RefreshCommand = new AsyncRelayCommand(async () => await RefreshSceneTreeAsync(null));
             SelectInEngineCommand = new AsyncRelayCommand(async () => await SelectInEngineAsync(null), () => SelectedObject != null);
 
-            // Initialize filter commands
             ClearFiltersCommand = new RelayCommand(ClearAllFilters);
             UnselectAllFiltersCommand = new RelayCommand(UnselectAllFilters);
 
-            // Initialize object type filter commands
             ShowAllObjectsCommand = new RelayCommand(() => SetObjectTypeFilter(ObjectTypeFilter.All));
             ShowActorsOnlyCommand = new RelayCommand(() => SetObjectTypeFilter(ObjectTypeFilter.ActorsOnly));
             ShowFrisesOnlyCommand = new RelayCommand(() => SetObjectTypeFilter(ObjectTypeFilter.FrisesOnly));
 
-            // Subscribe to service events
             _sceneService.OnlineSceneTreeUpdated += OnOnlineSceneTreeUpdated;
             _sceneService.OfflineSceneTreesUpdated += OnOfflineSceneTreesUpdated;
             _sceneService.ObjectSelectedFromRuntime += OnObjectSelectedFromRuntime;
 
-            // Subscribe to PropertiesEditor events to get selection notifications
             _propertiesService.PropertiesUpdated += OnPropertiesUpdated;
 
-            // Subscribe to connection events
             SubscribeToConnectionEvents();
 
-            // Initialize PropertiesEditor
             InitializePropertiesEditor();
             UpdateConnectionStatus();
-            // Start services
             _ = StartServicesAsync(_arguments);
         }
 
@@ -198,21 +176,18 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
-                // Start both services
                 await Task.WhenAll(
                     _sceneService.StartAsync(arguments),
                     _propertiesService.StartAsync(arguments)
                 );
                 LogService.Info("All services started successfully");
 
-                // If services were already running, force a connection attempt to ensure they connect
                 if (!_sceneService.IsConnected || !_propertiesService.IsConnected)
                 {
                     LogService.Info("Services not connected, forcing connection attempts");
                     _sceneService.ForceConnectionAttempt();
                     _propertiesService.ForceConnectionAttempt();
 
-                    // Give a moment for connection to establish, then request scene tree
                     _ = Task.Delay(1000).ContinueWith(_ =>
                     {
                         try
@@ -235,7 +210,6 @@ namespace DANCustomTools.ViewModels
                 }
                 else
                 {
-                    // Services are already connected, request scene tree immediately
                     LogService.Info("Services already connected, requesting scene tree");
                     _sceneService.RequestSceneTree();
 
@@ -253,13 +227,10 @@ namespace DANCustomTools.ViewModels
         {
             App.Current?.Dispatcher.InvokeAsync(() =>
             {
-                // Clear previous original groups
                 _originalSceneGroups.Clear();
 
-                // Store original actors for filtering
                 StoreOriginalActors(sceneTree);
 
-                // Extract and populate component filters
                 ExtractAndPopulateComponents(_originalActors);
 
                 var treeItem = CreateSceneTreeItem(sceneTree);
@@ -276,13 +247,10 @@ namespace DANCustomTools.ViewModels
         {
             App.Current?.Dispatcher.Invoke(() =>
             {
-                // Clear previous original groups
                 _originalSceneGroups.Clear();
 
-                // Store original actors from all scenes for filtering
                 StoreOriginalActorsFromScenes(sceneTrees);
 
-                // Extract and populate component filters
                 ExtractAndPopulateComponents(_originalActors);
 
                 SceneTreeItems.Clear();
@@ -305,32 +273,26 @@ namespace DANCustomTools.ViewModels
                 {
                     LogService.Info($"🔍 Searching for object {objectRef} in scene tree with {SceneTreeItems.Count} root items");
 
-                    // Find and select the object in the tree
                     var selectedItem = FindTreeItemByObjectRef(SceneTreeItems, objectRef);
                     if (selectedItem != null)
                     {
                         LogService.Info($"✅ Found object {objectRef} in scene tree!");
 
-                        // Clear previous selection
                         ClearTreeSelection(SceneTreeItems);
                         LogService.Info($"🧹 Cleared previous tree selection");
 
-                        // Set new selection
                         selectedItem.IsSelected = true;
                         selectedItem.IsExpanded = true;
 
-                        // Expand parent hierarchy to make sure the item is visible
                         ExpandParentHierarchy(selectedItem);
                         LogService.Info($"📂 Expanded parent hierarchy for visibility");
 
-                        // Update the SelectedObject property
                         if (selectedItem.Model is ObjectWithRefModel objectModel)
                         {
                             SelectedObject = objectModel;
                             LogService.Info($"🎯 Tree selection synced with runtime: {objectModel.FriendlyName} (ref: {objectRef})");
                         }
 
-                        // Request scroll to center the selected item
                         RequestScrollToItem(selectedItem);
                     }
                     else
@@ -353,7 +315,6 @@ namespace DANCustomTools.ViewModels
             {
                 LogService.Info($"🔗 PropertiesEditor updated for object ref: {propertyModel.ObjectRef} - syncing with scene tree");
 
-                // Reuse the same logic as runtime selection
                 App.Current?.Dispatcher.Invoke(() =>
                 {
                     try
@@ -363,24 +324,19 @@ namespace DANCustomTools.ViewModels
                         {
                             LogService.Info($"✅ Found and selecting object {propertyModel.ObjectRef} from properties update");
 
-                            // Clear previous selection
                             ClearTreeSelection(SceneTreeItems);
 
-                            // Set new selection
                             selectedItem.IsSelected = true;
                             selectedItem.IsExpanded = true;
 
-                            // Expand parent hierarchy
                             ExpandParentHierarchy(selectedItem);
 
-                            // Update the SelectedObject property
                             if (selectedItem.Model is ObjectWithRefModel objectModel)
                             {
                                 SelectedObject = objectModel;
                                 LogService.Info($"Tree selection synced from PropertiesEditor: {objectModel.FriendlyName} (ref: {propertyModel.ObjectRef})");
                             }
 
-                            // Request scroll to center the selected item
                             RequestScrollToItem(selectedItem);
                         }
                         else
@@ -402,13 +358,11 @@ namespace DANCustomTools.ViewModels
         {
             foreach (var item in items)
             {
-                // Check if this item matches
                 if (item.Model is ObjectWithRefModel objectModel && objectModel.ObjectRef == objectRef)
                 {
                     return item;
                 }
 
-                // Recursively search in children
                 var foundInChildren = FindTreeItemByObjectRef(item.Children, objectRef);
                 if (foundInChildren != null)
                 {
@@ -425,7 +379,6 @@ namespace DANCustomTools.ViewModels
 
         private void RequestScrollToItem(SceneTreeItemViewModel item)
         {
-            // Use a small delay to ensure the tree view has updated its layout
             Task.Delay(100).ContinueWith(_ =>
             {
                 App.Current?.Dispatcher.Invoke(() =>
@@ -450,18 +403,14 @@ namespace DANCustomTools.ViewModels
 
             lock (_filterLock)
             {
-                // Dispose any existing timer safely
                 _filterThrottleTimer?.Dispose();
                 _filterThrottleTimer = null;
 
-                // Store the pending filter
                 _pendingFilter = filter;
 
-                // Create a new timer that will apply the filter after a short delay
                 _filterThrottleTimer = new System.Threading.Timer(ApplyPendingFilter, null, TimeSpan.FromMilliseconds(100), Timeout.InfiniteTimeSpan);
             }
 
-            // Update UI immediately for responsiveness
             CurrentObjectTypeFilter = filter;
             OnPropertyChanged(nameof(IsShowingAll));
             OnPropertyChanged(nameof(IsShowingActorsOnly));
@@ -486,7 +435,6 @@ namespace DANCustomTools.ViewModels
 
             if (filterToApply.HasValue)
             {
-                // Apply the filter on UI thread
                 try
                 {
                     App.Current?.Dispatcher.BeginInvoke(new Action(() =>
@@ -514,34 +462,28 @@ namespace DANCustomTools.ViewModels
             {
                 var startTime = DateTime.Now;
 
-                // Use async dispatcher to avoid blocking UI thread
+                // Apply object type filter to each scene in the tree
                 App.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    // Suspend layout updates during the operation
-                    // Batch updates to minimize UI notifications
                     using (var deferRefresh = DeferTreeViewRefresh())
                     {
-                        // Apply object type filter to each scene in the tree
                         var scenesToRemove = new List<SceneTreeItemViewModel>();
                         foreach (var sceneItem in SceneTreeItems.ToList())
                         {
                             ApplyObjectTypeFilterToScene(sceneItem);
 
-                            // Check if this root level scene should be hidden when filtering by actors only
                             if (CurrentObjectTypeFilter == ObjectTypeFilter.ActorsOnly && !HasVisibleGroups(sceneItem))
                             {
                                 scenesToRemove.Add(sceneItem);
                             }
                         }
 
-                        // Remove empty scenes from root level when filtering by actors
                         foreach (var sceneToRemove in scenesToRemove)
                         {
                             SceneTreeItems.Remove(sceneToRemove);
                         }
                     }
 
-                    // Single UI refresh after all updates
                     OnPropertyChanged(nameof(SceneTreeItems));
 
                     var duration = (DateTime.Now - startTime).TotalMilliseconds;
@@ -560,22 +502,19 @@ namespace DANCustomTools.ViewModels
         {
             if (sceneItem.Model is not SceneTreeModel sceneModel) return;
 
-            // Get original groups for this scene
             if (!_originalSceneGroups.TryGetValue(sceneItem, out var originalGroups))
             {
-                return; // Skip if no original groups found
+                return;
             }
 
             var (originalActorsGroup, originalFrisesGroup) = originalGroups;
             bool hasVisibleContent = false;
 
-            // Performance optimization: Batch all group operations
             var groupsToAdd = new List<SceneTreeItemViewModel>();
             var groupsToRemove = sceneItem.Children.Where(c =>
                 c.ItemType == SceneTreeItemType.ActorSet ||
                 c.ItemType == SceneTreeItemType.FriseSet).ToList();
 
-            // Determine which groups should be visible based on filter
             switch (CurrentObjectTypeFilter)
             {
                 case ObjectTypeFilter.All:
@@ -608,19 +547,16 @@ namespace DANCustomTools.ViewModels
                     break;
             }
 
-            // Batch remove all groups first
             foreach (var group in groupsToRemove)
             {
                 sceneItem.Children.Remove(group);
             }
 
-            // Batch add new groups in correct order
             foreach (var group in groupsToAdd.OrderBy(g => GetInsertIndexForGroup(sceneItem.Children, g.ItemType)))
             {
                 AddGroupToScene(sceneItem, group);
             }
 
-            // Recursively apply to child scenes with reduced logging
             var childScenesWithContent = 0;
             foreach (var childScene in sceneItem.Children.Where(c => c.ItemType == SceneTreeItemType.Scene).ToList())
             {
@@ -637,7 +573,6 @@ namespace DANCustomTools.ViewModels
                 }
             }
 
-            // Reduced logging - only log summary information
             if (sceneModel.Actors.Count > 0 || sceneModel.Frises.Count > 0 || childScenesWithContent > 0)
             {
                 LogService.Info($"Scene '{sceneModel.UniqueName}': {CurrentObjectTypeFilter}, A:{sceneModel.Actors.Count}, F:{sceneModel.Frises.Count}, Children:{childScenesWithContent}");
@@ -646,25 +581,19 @@ namespace DANCustomTools.ViewModels
 
         private void AddGroupToScene(SceneTreeItemViewModel sceneItem, SceneTreeItemViewModel groupItem)
         {
-            // Performance optimization: Check if group is already at correct position
             int correctIndex = GetInsertIndexForGroup(sceneItem.Children, groupItem.ItemType);
 
-            // Check if the group is already at the correct position
             if (correctIndex < sceneItem.Children.Count &&
                 sceneItem.Children[correctIndex] == groupItem)
             {
-                // Group is already in the correct position, no need to update
                 return;
             }
 
-            // Check if group is already in the collection but at wrong position
             if (sceneItem.Children.Contains(groupItem))
             {
-                // Move to correct position
                 sceneItem.Children.Remove(groupItem);
             }
 
-            // Insert the group at the correct position
             if (correctIndex >= sceneItem.Children.Count)
             {
                 sceneItem.Children.Add(groupItem);
@@ -674,13 +603,11 @@ namespace DANCustomTools.ViewModels
                 sceneItem.Children.Insert(correctIndex, groupItem);
             }
 
-            // Minimal logging for performance
             // LogService.Info($"Added {groupItem.ItemType} group '{groupItem.DisplayName}' to scene at index {correctIndex}");
         }
 
         private bool HasVisibleGroups(SceneTreeItemViewModel sceneItem)
         {
-            // Check if this scene has any visible actors or frises groups
             var actorsGroup = sceneItem.Children.FirstOrDefault(c => c.ItemType == SceneTreeItemType.ActorSet);
             var frisesGroup = sceneItem.Children.FirstOrDefault(c => c.ItemType == SceneTreeItemType.FriseSet);
 
@@ -692,7 +619,6 @@ namespace DANCustomTools.ViewModels
             if (frisesGroup != null && sceneItem.Children.Contains(frisesGroup))
                 hasVisibleGroups = true;
 
-            // Also check child scenes recursively
             foreach (var childScene in sceneItem.Children.Where(c => c.ItemType == SceneTreeItemType.Scene))
             {
                 if (HasVisibleGroups(childScene))
@@ -707,23 +633,19 @@ namespace DANCustomTools.ViewModels
 
         private void SetSceneVisibility(SceneTreeItemViewModel sceneItem, bool isVisible)
         {
-            // Find the parent that contains this scene
             var parentScene = FindParentSceneForScene(sceneItem);
-            if (parentScene == null) return; // Root level scenes are always visible
+            if (parentScene == null) return;
 
             if (isVisible)
             {
-                // Ensure the scene is in the parent's children collection
                 if (!parentScene.Children.Contains(sceneItem))
                 {
-                    // Insert scene at the beginning (scenes should come first)
                     int insertIndex = 0;
                     parentScene.Children.Insert(insertIndex, sceneItem);
                 }
             }
             else
-            {
-                // Remove the scene from the parent's children collection
+            {   
                 if (parentScene.Children.Contains(sceneItem))
                 {
                     parentScene.Children.Remove(sceneItem);
@@ -733,7 +655,6 @@ namespace DANCustomTools.ViewModels
 
         private SceneTreeItemViewModel? FindParentSceneForScene(SceneTreeItemViewModel targetScene)
         {
-            // Search through all scenes to find which one contains this child scene
             foreach (var sceneItem in SceneTreeItems)
             {
                 var foundParent = FindParentSceneForSceneRecursive(sceneItem, targetScene);
@@ -744,13 +665,11 @@ namespace DANCustomTools.ViewModels
 
         private SceneTreeItemViewModel? FindParentSceneForSceneRecursive(SceneTreeItemViewModel currentScene, SceneTreeItemViewModel targetScene)
         {
-            // Check if this scene directly contains the target scene
             if (currentScene.Children.Contains(targetScene))
             {
                 return currentScene;
             }
 
-            // Recursively check child scenes
             foreach (var childScene in currentScene.Children.Where(c => c.ItemType == SceneTreeItemType.Scene))
             {
                 var foundParent = FindParentSceneForSceneRecursive(childScene, targetScene);
@@ -762,23 +681,19 @@ namespace DANCustomTools.ViewModels
 
         private void SetGroupVisibility(SceneTreeItemViewModel groupItem, bool isVisible)
         {
-            // Find the parent scene that contains this group
             var parentScene = FindParentSceneForGroup(groupItem);
             if (parentScene == null) return;
 
             if (isVisible)
             {
-                // Ensure the group is in the parent scene's children collection
                 if (!parentScene.Children.Contains(groupItem))
                 {
-                    // Find the correct position to insert based on item type order
                     int insertIndex = GetInsertIndexForGroup(parentScene.Children, groupItem.ItemType);
                     parentScene.Children.Insert(insertIndex, groupItem);
                 }
             }
             else
             {
-                // Remove the group from the parent scene's children collection
                 if (parentScene.Children.Contains(groupItem))
                 {
                     parentScene.Children.Remove(groupItem);
@@ -788,7 +703,6 @@ namespace DANCustomTools.ViewModels
 
         private SceneTreeItemViewModel? FindParentSceneForGroup(SceneTreeItemViewModel groupItem)
         {
-            // Search through all scenes to find which one contains this group
             foreach (var sceneItem in SceneTreeItems)
             {
                 var foundParent = FindParentSceneRecursive(sceneItem, groupItem);
@@ -799,13 +713,11 @@ namespace DANCustomTools.ViewModels
 
         private SceneTreeItemViewModel? FindParentSceneRecursive(SceneTreeItemViewModel currentScene, SceneTreeItemViewModel targetGroup)
         {
-            // Check if this scene directly contains the target group
             if (currentScene.Children.Contains(targetGroup))
             {
                 return currentScene;
             }
 
-            // Recursively check child scenes
             foreach (var childScene in currentScene.Children.Where(c => c.ItemType == SceneTreeItemType.Scene))
             {
                 var foundParent = FindParentSceneRecursive(childScene, targetGroup);
@@ -817,27 +729,24 @@ namespace DANCustomTools.ViewModels
 
         private int GetInsertIndexForGroup(ObservableCollection<SceneTreeItemViewModel> children, SceneTreeItemType groupType)
         {
-            // Insert order: child scenes first, then actors, then frises
             if (groupType == SceneTreeItemType.ActorSet)
             {
-                // Insert actors after any child scenes but before frises
                 var lastSceneIndex = -1;
                 for (int i = 0; i < children.Count; i++)
                 {
                     if (children[i].ItemType == SceneTreeItemType.Scene)
                         lastSceneIndex = i;
                     else if (children[i].ItemType == SceneTreeItemType.FriseSet)
-                        return i; // Insert before frises
+                        return i;
                 }
-                return lastSceneIndex + 1; // Insert after last scene
+                return lastSceneIndex + 1;
             }
             else if (groupType == SceneTreeItemType.FriseSet)
             {
-                // Insert frises at the end
                 return children.Count;
             }
 
-            return children.Count; // Default: insert at end
+            return children.Count;
         }
 
         private void ClearTreeSelection(ObservableCollection<SceneTreeItemViewModel> items)
@@ -931,14 +840,12 @@ namespace DANCustomTools.ViewModels
             SceneTreeItemViewModel? actorsGroup = null;
             SceneTreeItemViewModel? frisesGroup = null;
 
-            // Add child scenes first (recursive)
             foreach (var child in sceneTree.ChildScenes)
             {
                 var childItem = CreateSceneTreeItem(child);
                 item.Children.Add(childItem);
             }
 
-            // Add actors group if there are actors
             if (sceneTree.Actors.Count > 0)
             {
                 actorsGroup = new SceneTreeItemViewModel
@@ -961,7 +868,6 @@ namespace DANCustomTools.ViewModels
                 item.Children.Add(actorsGroup);
             }
 
-            // Add frises group if there are frises
             if (sceneTree.Frises.Count > 0)
             {
                 frisesGroup = new SceneTreeItemViewModel
@@ -984,13 +890,11 @@ namespace DANCustomTools.ViewModels
                 item.Children.Add(frisesGroup);
             }
 
-            // Store original groups for filtering
             _originalSceneGroups[item] = (actorsGroup, frisesGroup);
 
             return item;
         }
 
-        // Tree Selection Handler
         public void OnTreeItemSelected(SceneTreeItemViewModel selectedItem)
         {
             if (selectedItem == null) return;
@@ -1003,9 +907,7 @@ namespace DANCustomTools.ViewModels
                     if (selectedItem.Model is SceneTreeModel scene)
                     {
                         LogService.Info($"Selected scene: {scene.UniqueName}");
-                        // Auto-focus scene in engine
                         _sceneService.SelectScene(scene.UniqueName);
-                        // Clear properties when scene is selected
                         PropertiesEditor.ViewModel?.ClearProperties();
                         SelectedObject = null;
                     }
@@ -1017,10 +919,8 @@ namespace DANCustomTools.ViewModels
                         SelectedObject = actor;
                         LogService.Info($"Selected actor: {actor.FriendlyName}");
 
-                        // Load properties for the selected actor
                         PropertiesEditor.ViewModel?.LoadObjectProperties(actor);
 
-                        // Auto-focus actor in engine
                         if (actor.IsOnline)
                         {
                             _sceneService.SelectObjects(new[] { actor });
@@ -1034,10 +934,8 @@ namespace DANCustomTools.ViewModels
                         SelectedObject = frise;
                         LogService.Info($"Selected frise: {frise.FriendlyName}");
 
-                        // Load properties for the selected frise
                         PropertiesEditor.ViewModel?.LoadObjectProperties(frise);
 
-                        // Auto-focus frise in engine
                         if (frise.IsOnline)
                         {
                             _sceneService.SelectObjects(new[] { frise });
@@ -1047,7 +945,6 @@ namespace DANCustomTools.ViewModels
 
                 case SceneTreeItemType.ActorSet:
                 case SceneTreeItemType.FriseSet:
-                    // Group selected - clear properties
                     PropertiesEditor.ViewModel?.ClearProperties();
                     SelectedObject = null;
                     LogService.Info($"Selected {selectedItem.ItemType} group");
@@ -1055,7 +952,6 @@ namespace DANCustomTools.ViewModels
             }
         }
 
-        // Command Implementations
         private async Task SelectInEngineAsync(object? parameter)
         {
             try
@@ -1107,7 +1003,6 @@ namespace DANCustomTools.ViewModels
                     _sceneService.DeleteObject(SelectedObject.ObjectRef);
                     LogService.Info($"Deleted object: {SelectedObject.FriendlyName}");
 
-                    // Clear properties after deletion
                     PropertiesEditor.ViewModel?.ClearProperties();
                     SelectedObject = null;
                 }
@@ -1137,7 +1032,6 @@ namespace DANCustomTools.ViewModels
             await Task.CompletedTask;
         }
 
-        // Context Menu Command Implementations
         private bool CanExecuteDuplicate() =>
             SelectedObject != null &&
             SelectedObject.IsOnline &&
@@ -1149,8 +1043,7 @@ namespace DANCustomTools.ViewModels
                 return;
 
             try
-            {
-                // Duplicate at current position (0, 0, 0 offset)
+            {   
                 _sceneService.DuplicateAndMoveObject(SelectedObject.ObjectRef, 0.0f, 0.0f, 0.0f);
                 LogService.Info($"Duplicated object '{SelectedObject.FriendlyName}' at current position");
             }
@@ -1173,7 +1066,6 @@ namespace DANCustomTools.ViewModels
             if (!CanExecuteDelete() || SelectedObject == null)
                 return;
 
-            // Show confirmation dialog
             var result = System.Windows.MessageBox.Show(
                 $"Are you sure you want to delete '{SelectedObject.FriendlyName}'?\n\nThis action cannot be undone.",
                 "Confirm Delete",
@@ -1186,10 +1078,8 @@ namespace DANCustomTools.ViewModels
                 {
                     var objectToDelete = SelectedObject;
 
-                    // Execute deletion
                     _sceneService.DeleteObject(objectToDelete.ObjectRef);
 
-                    // Clear selection and properties
                     SelectedObject = null;
                     PropertiesEditor.ViewModel?.ClearProperties();
 
@@ -1221,14 +1111,11 @@ namespace DANCustomTools.ViewModels
                 var oldName = objectToRename.FriendlyName;
                 var trimmedNewName = newName.Trim();
 
-                // Execute rename through service
                 _sceneService.RenameObject(objectToRename.ObjectRef, trimmedNewName);
 
-                // Find the corresponding item in the tree and update its name
                 var treeItem = FindTreeItemByObjectRef(SceneTreeItems, objectToRename.ObjectRef);
                 if (treeItem != null)
                 {
-                    // This assumes DisplayName property setter will notify the UI
                     treeItem.DisplayName = trimmedNewName;
                 }
 
@@ -1241,7 +1128,6 @@ namespace DANCustomTools.ViewModels
             }
         }
 
-        // Component Filtering Methods
 
         private void ExtractAndPopulateComponents(List<ActorModel> actors)
         {
@@ -1255,22 +1141,18 @@ namespace DANCustomTools.ViewModels
                     var actorCount = actors.Count(a => _componentFilterService.ActorHasAnyComponent(a, new HashSet<string> { component }));
                     var model = new ComponentFilterModel(component, actorCount);
 
-                    // Default to selected (all components shown by default)
                     model.IsSelected = true;
 
-                    // Subscribe to selection changes
                     model.SelectionChanged += OnComponentSelectionChanged;
 
                     componentModels.Add(model);
                 }
 
-                // Unsubscribe from old models
                 foreach (var oldModel in AvailableComponents)
                 {
                     oldModel.SelectionChanged -= OnComponentSelectionChanged;
                 }
 
-                // Initialize SelectedComponents with all components (default state)
                 SelectedComponents.Clear();
                 foreach (var component in allComponents)
                 {
@@ -1283,10 +1165,8 @@ namespace DANCustomTools.ViewModels
                     AvailableComponents.Add(model);
                 }
 
-                // Default to no filtering (all components selected = show all actors)
                 IsComponentFilterEnabled = false;
 
-                // Notify UI that HasComponents and SelectedComponentsCount have changed
                 OnPropertyChanged(nameof(HasComponents));
                 OnPropertyChanged(nameof(SelectedComponents));
                 OnPropertyChanged(nameof(SelectedComponentsCount));
@@ -1309,7 +1189,6 @@ namespace DANCustomTools.ViewModels
             {
                 if (isSelected)
                 {
-                    // Component is re-selected (actors with this component will be shown again)
                     if (!SelectedComponents.Contains(componentModel.ComponentName))
                     {
                         SelectedComponents.Add(componentModel.ComponentName);
@@ -1318,7 +1197,6 @@ namespace DANCustomTools.ViewModels
                 }
                 else
                 {
-                    // Component is deselected (hide actors with this component)
                     if (SelectedComponents.Contains(componentModel.ComponentName))
                     {
                         SelectedComponents.Remove(componentModel.ComponentName);
@@ -1326,13 +1204,11 @@ namespace DANCustomTools.ViewModels
                     }
                 }
 
-                // Notify UI about SelectedComponents change
                 OnPropertyChanged(nameof(SelectedComponents));
                 OnPropertyChanged(nameof(SelectedComponentsCount));
 
                 ApplyComponentFilters();
 
-                // Enable filtering when not all components are selected
                 var totalComponents = AvailableComponents.Count;
                 var selectedCount = SelectedComponents.Count;
                 IsComponentFilterEnabled = selectedCount < totalComponents;
@@ -1350,30 +1226,24 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
-                // Temporarily unsubscribe to avoid triggering events during bulk operation
                 foreach (var component in AvailableComponents)
                 {
                     component.SelectionChanged -= OnComponentSelectionChanged;
-                    // Select all components (default state = show all actors)
                     component.IsSelected = true;
                     component.SelectionChanged += OnComponentSelectionChanged;
                 }
 
-                // Reset SelectedComponents to contain all components
                 SelectedComponents.Clear();
                 foreach (var component in AvailableComponents)
                 {
                     SelectedComponents.Add(component.ComponentName);
                 }
 
-                // Notify UI about SelectedComponents change
                 OnPropertyChanged(nameof(SelectedComponents));
                 OnPropertyChanged(nameof(SelectedComponentsCount));
 
-                // All components selected = no filtering
                 IsComponentFilterEnabled = false;
 
-                // Rebuild scene tree to show all actors
                 ApplyComponentFilters();
 
                 LogService.Info("Reset all component filters - all components enabled, showing all actors");
@@ -1388,26 +1258,20 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
-                // Temporarily unsubscribe to avoid triggering events during bulk operation
                 foreach (var component in AvailableComponents)
                 {
                     component.SelectionChanged -= OnComponentSelectionChanged;
-                    // Deselect all components (hide all actors)
                     component.IsSelected = false;
                     component.SelectionChanged += OnComponentSelectionChanged;
                 }
 
-                // Clear SelectedComponents to hide all actors
                 SelectedComponents.Clear();
 
-                // Notify UI about SelectedComponents change
                 OnPropertyChanged(nameof(SelectedComponents));
                 OnPropertyChanged(nameof(SelectedComponentsCount));
 
-                // No components selected = maximum filtering (hide all)
                 IsComponentFilterEnabled = true;
 
-                // Rebuild scene tree to hide all actors
                 ApplyComponentFilters();
 
                 LogService.Info("Unselected all component filters - no components enabled, hiding all actors");
@@ -1432,8 +1296,7 @@ namespace DANCustomTools.ViewModels
                 var selectedComponents = SelectedComponents.Count;
 
                 if (selectedComponents == totalComponents)
-                {
-                    // All components are selected, show all actors
+                {   
                     RebuildSceneTreeWithActors(_originalActors);
                     LogService.Info($"All components selected, showing all {_originalActors.Count} actors");
                     return;
@@ -1441,19 +1304,16 @@ namespace DANCustomTools.ViewModels
 
                 if (selectedComponents == 0)
                 {
-                    // No components selected, hide all actors
                     RebuildSceneTreeWithActors(new List<ActorModel>());
                     LogService.Info("No components selected, hiding all actors");
                     return;
                 }
 
-                // Filter actors: Show actors that have ANY of the SELECTED components (OR logic)
                 var selectedComponentsSet = new HashSet<string>(SelectedComponents, StringComparer.OrdinalIgnoreCase);
 
                 var filteredActors = new List<ActorModel>();
                 foreach (var actor in _originalActors)
                 {
-                    // Show actor if it has at least one selected component
                     bool hasSelectedComponent = _componentFilterService.ActorHasAnyComponent(actor, selectedComponentsSet);
                     if (hasSelectedComponent)
                     {
@@ -1479,13 +1339,10 @@ namespace DANCustomTools.ViewModels
             {
                 var startTime = DateTime.Now;
 
-                // Create a HashSet of actors to show for fast lookup
                 var actorsToShowSet = new HashSet<ActorModel>(actorsToShow);
 
-                // Use async dispatcher to avoid blocking UI thread
                 App.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    // Update visibility of actors without rebuilding the tree
                     foreach (var sceneItem in SceneTreeItems)
                     {
                         UpdateActorVisibility(sceneItem, actorsToShowSet);
@@ -1517,26 +1374,22 @@ namespace DANCustomTools.ViewModels
         private class TreeViewRefreshDeferrer : IDisposable
         {
             public void Dispose()
-            {
-                // Placeholder for batched refresh logic if needed
+            {   
             }
         }
 
         private void UpdateActorVisibility(SceneTreeItemViewModel sceneItem, HashSet<ActorModel> actorsToShowSet)
         {
-            // Recursively update visibility for all actors in the tree
             foreach (var child in sceneItem.Children)
             {
                 if (child.ItemType == SceneTreeItemType.Actor && child.Model is ActorModel actor)
                 {
-                    // Update visibility based on whether this actor should be shown
                     child.IsVisible = actorsToShowSet.Contains(actor);
                 }
                 else if (child.ItemType == SceneTreeItemType.ActorSet || 
                          child.ItemType == SceneTreeItemType.FriseSet || 
                          child.ItemType == SceneTreeItemType.Scene)
                 {
-                    // Recursively update children
                     UpdateActorVisibility(child, actorsToShowSet);
                 }
             }
@@ -1546,43 +1399,33 @@ namespace DANCustomTools.ViewModels
         {
             if (sceneItem.Model is not SceneTreeModel sceneModel) return;
 
-            // Find the actors group in this scene
             var actorsGroup = sceneItem.Children.FirstOrDefault(c => c.ItemType == SceneTreeItemType.ActorSet);
             if (actorsGroup != null)
             {
-                // Get actors that belong to this scene
                 var sceneActors = actorsToShow.Where(a => sceneModel.Actors.Contains(a)).ToList();
 
-                // Performance optimization: Only update if the content actually changed
                 var currentActorCount = actorsGroup.Children.Count;
                 var newActorCount = sceneActors.Count;
 
-                // Check if we need to update at all
                 bool needsUpdate = currentActorCount != newActorCount;
                 if (!needsUpdate && sceneActors.Count > 0)
                 {
-                    // Quick check if actors are the same (by reference)
                     var currentActors = actorsGroup.Children.Select(c => c.Model).OfType<ActorModel>().ToArray();
                     needsUpdate = !sceneActors.SequenceEqual(currentActors);
                 }
 
                 if (needsUpdate)
                 {
-                    // Batch the updates to minimize UI notifications
                     var children = actorsGroup.Children;
 
-                    // Use more efficient bulk operations
                     if (sceneActors.Count == 0)
                     {
-                        // Clear all at once
                         children.Clear();
                     }
                     else
                     {
-                        // Replace existing items more efficiently
                         children.Clear();
 
-                        // Add all new items in one batch
                         foreach (var actor in sceneActors)
                         {
                             children.Add(new SceneTreeItemViewModel
@@ -1594,10 +1437,8 @@ namespace DANCustomTools.ViewModels
                         }
                     }
 
-                    // Update display name only once
                     actorsGroup.DisplayName = $"Actors ({sceneActors.Count})";
 
-                    // Minimal logging - only for scenes with significant changes
                     if (sceneActors.Count > 10 || currentActorCount > 10)
                     {
                         LogService.Info($"Updated actors group for scene '{sceneModel.UniqueName}': {currentActorCount} -> {sceneActors.Count} actors");
@@ -1605,7 +1446,6 @@ namespace DANCustomTools.ViewModels
                 }
             }
 
-            // Recursively update child scenes
             foreach (var childScene in sceneItem.Children.Where(c => c.ItemType == SceneTreeItemType.Scene))
             {
                 UpdateSceneActorsGroup(childScene, actorsToShow);
@@ -1655,7 +1495,6 @@ namespace DANCustomTools.ViewModels
             {
                 LogService?.Info("Disposing SceneExplorerViewModel...");
 
-                // Unsubscribe from service events FIRST to prevent any callbacks during disposal
                 try
                 {
                     _sceneService.OnlineSceneTreeUpdated -= OnOnlineSceneTreeUpdated;
@@ -1668,7 +1507,6 @@ namespace DANCustomTools.ViewModels
                     LogService?.Warning($"Error unsubscribing from events: {ex.Message}");
                 }
 
-                // Dispose throttle timer safely
                 lock (_filterLock)
                 {
                     _filterThrottleTimer?.Dispose();
@@ -1676,13 +1514,11 @@ namespace DANCustomTools.ViewModels
                     _pendingFilter = null;
                 }
 
-                // Unsubscribe from component events
                 foreach (var component in AvailableComponents)
                 {
                     component.SelectionChanged -= OnComponentSelectionChanged;
                 }
 
-                // Dispose PropertiesEditor
                 try
                 {
                     PropertiesEditor?.ViewModel?.Dispose();
