@@ -56,14 +56,10 @@ namespace DANCustomTools.ViewModels
             SwitchToEditorCommand = new RelayCommand(() => SwitchToMainTool("Editor"), () => !IsEditorActive);
             SwitchToAssetsCookerCommand = new RelayCommand(() => SwitchToMainTool("AssetsCooker"), () => !IsAssetsCookerActive);
             LaunchTeaBoxCommand = new RelayCommand(LaunchTeaBox);
-
-            // Subscribe to tool manager events
             _toolManager.CurrentMainToolChanged += OnCurrentMainToolChanged;
 
-            // Load available main tools
             LoadMainTools();
 
-            // Initialize with Editor tool - defer to ensure UI is ready
             System.Windows.Application.Current.Dispatcher.BeginInvoke(
                 System.Windows.Threading.DispatcherPriority.Loaded,
                 new Action(() => SwitchToMainTool("Editor"))
@@ -85,13 +81,12 @@ namespace DANCustomTools.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"[MainViewModel] Switching to tool: {toolName}");
 
-                // For initialization, allow switching even to the same tool
                 bool isInitialization = CurrentToolViewModel == null;
 
                 if (CurrentToolName == toolName && !isInitialization)
                 {
                     System.Diagnostics.Debug.WriteLine($"[MainViewModel] Tool {toolName} already active, ignoring");
-                    return; // Ignore if already active (except during initialization)
+                    return;
                 }
 
                 System.Diagnostics.Debug.WriteLine($"[MainViewModel] Calling ToolManager.SwitchToMainTool({toolName})");
@@ -101,7 +96,6 @@ namespace DANCustomTools.ViewModels
                 System.Diagnostics.Debug.WriteLine($"[MainViewModel] CurrentToolName set to: {CurrentToolName}");
                 System.Diagnostics.Debug.WriteLine($"[MainViewModel] IsEditorActive: {IsEditorActive}, IsAssetsCookerActive: {IsAssetsCookerActive}");
 
-                // Refresh command states
                 (SwitchToEditorCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 (SwitchToAssetsCookerCommand as RelayCommand)?.RaiseCanExecuteChanged();
 
@@ -124,19 +118,17 @@ namespace DANCustomTools.ViewModels
         {
             try
             {
-                // Get the current application directory
                 string currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
 
-                // Navigate to the TeaBox directory (../Teabox/TeaBox.exe)
                 string teaBoxPath = Path.Combine(currentDirectory, "..", "Teabox", "TeaBox.exe");
-                teaBoxPath = Path.GetFullPath(teaBoxPath); // Resolve relative path
+                teaBoxPath = Path.GetFullPath(teaBoxPath);
 
                 if (File.Exists(teaBoxPath))
                 {
                     var startInfo = new ProcessStartInfo
                     {
                         FileName = teaBoxPath,
-                        UseShellExecute = true // Use shell execute to launch the executable properly
+                        UseShellExecute = true
                     };
 
                     Process.Start(startInfo);
@@ -167,17 +159,14 @@ namespace DANCustomTools.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine("MainViewModel disposing...");
 
-                // Unsubscribe from events
                 _toolManager.CurrentMainToolChanged -= OnCurrentMainToolChanged;
 
-                // Dispose current tool view model
                 if (_currentToolViewModel is IDisposable disposableViewModel)
                 {
                     System.Diagnostics.Debug.WriteLine($"Disposing current tool: {_currentToolViewModel.GetType().Name}");
                     disposableViewModel.Dispose();
                 }
 
-                // Dispose all tools
                 foreach (var tool in MainTools)
                 {
                     if (tool is IDisposable disposableTool)
@@ -187,7 +176,6 @@ namespace DANCustomTools.ViewModels
                     }
                 }
 
-                // Dispose tool manager
                 if (_toolManager is IDisposable disposableManager)
                 {
                     System.Diagnostics.Debug.WriteLine("Disposing ToolManager");

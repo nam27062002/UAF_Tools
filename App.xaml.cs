@@ -122,11 +122,12 @@ namespace DANCustomTools
             }
             finally
             {
+                // Force process termination after 1 second
                 var forceExitTimer = new System.Threading.Timer(_ =>
                 {
                     System.Diagnostics.Debug.WriteLine("Force terminating process...");
-                    Environment.Exit(0);
-                }, null, TimeSpan.FromSeconds(1), Timeout.InfiniteTimeSpan);
+                    System.Environment.Exit(0);
+                }, null, 1000, System.Threading.Timeout.Infinite);
             }
         }
     }
