@@ -474,25 +474,154 @@ namespace DANCustomTools.Views
 
             System.Diagnostics.Debug.WriteLine($"[Scroll] Found item on attempt {_pendingScrollAttempts}: {_pendingScrollItem.DisplayName}");
 
-            // Bring into view first
-            treeViewItem.BringIntoView();
-
-            // Center after render pass
-            Dispatcher.BeginInvoke(new Action(() =>
+            // Prefer focusing (lets WPF perform its own initial BringIntoView once)
+            if (!treeViewItem.IsFocused)
             {
-                try
-                {
-                    CenterTreeViewItem(treeViewItem);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[Scroll] Center failed: {ex.Message}");
-                }
-            }), DispatcherPriority.Loaded);
+                treeViewItem.Focus();
+                System.Diagnostics.Debug.WriteLine("[Scroll] Focused item (WPF may auto BringIntoView)");
+            }
+
+            // Schedule centering with retry logic (after focus/layout settles)
+            ScheduleCentering(treeViewItem, 0);
 
             // Done
             _pendingScrollItem = null;
             DetachLayoutUpdatedHandler();
+        }
+
+        private void ScheduleCentering(TreeViewItem item, int attempt)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    if (!TryCenterTreeViewItem(item))
+                    {
+                        if (attempt < 5)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[Scroll] Center attempt {attempt + 1} deferred (viewport not ready). Retrying...");
+                            ScheduleCentering(item, attempt + 1);
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine("[Scroll] Gave up centering after 5 attempts.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Scroll] Center exception: {ex.Message}");
+                }
+            }), attempt == 0 ? DispatcherPriority.Loaded : DispatcherPriority.Background);
+        }
+
+        private bool TryCenterTreeViewItem(TreeViewItem item)
+        {
+            var scrollViewer = FindVisualChild<ScrollViewer>(SceneTreeView);
+            if (scrollViewer == null)
+            {
+                System.Diagnostics.Debug.WriteLine("[Scroll] No ScrollViewer found yet");
+                return false;
+            }
+
+            if (scrollViewer.ViewportHeight <= 1) // not measured yet
+            {
+                return false;
+            }
+
+            try
+            {
+                var (targetOffset, positionY, viewportHeight, itemHeight) = CalculateCenterOffset(scrollViewer, item);
+                if (itemHeight <= 0) return false;
+
+                var before = scrollViewer.VerticalOffset;
+                if (Math.Abs(targetOffset - before) < 2)
+                {
+                    // Already close enough; still schedule stabilization in case layout shifts
+                    ScheduleFinalCenter(scrollViewer, item);
+                    return true;
+                }
+
+                AnimateScroll(scrollViewer, targetOffset);
+                System.Diagnostics.Debug.WriteLine($"[Scroll] Centering item. Before={before:F1} AfterTarget={targetOffset:F1} PosY={positionY:F1} ViewH={viewportHeight:F1}");
+
+                ScheduleFinalCenter(scrollViewer, item);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Scroll] Transform exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        private DispatcherTimer? _finalCenterTimer;
+        private void ScheduleFinalCenter(ScrollViewer scrollViewer, TreeViewItem item)
+        {
+            _finalCenterTimer?.Stop();
+            _finalCenterTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
+            _finalCenterTimer.Tick += (s, e) =>
+            {
+                try
+                {
+                    _finalCenterTimer?.Stop();
+                    var (targetOffset, positionY, viewportHeight, _) = CalculateCenterOffset(scrollViewer, item);
+                    var current = scrollViewer.VerticalOffset;
+                    var diff = Math.Abs(current - targetOffset);
+                    if (diff > 8)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[Scroll] Final stabilize: current={current:F1} target={targetOffset:F1} drift={diff:F1}px posY={positionY:F1}");
+                        scrollViewer.ScrollToVerticalOffset(targetOffset);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Scroll] Final stabilize exception: {ex.Message}");
+                }
+            };
+            _finalCenterTimer.Start();
+        }
+
+        private (double targetOffset, double positionY, double viewportHeight, double itemHeight) CalculateCenterOffset(ScrollViewer scrollViewer, TreeViewItem item)
+        {
+            // Try to get panel hosting items for more stable coordinate space
+            var itemsHost = (FindItemsHostPanel(scrollViewer.Content as DependencyObject) ?? (DependencyObject)scrollViewer) as UIElement;
+            Point itemPoint;
+            try
+            {
+                if (itemsHost == null)
+                {
+                    // Fallback to scrollViewer if casting failed unexpectedly
+                    itemsHost = scrollViewer;
+                }
+                itemPoint = item.TranslatePoint(new Point(0, 0), itemsHost);
+            }
+            catch
+            {
+                // fallback
+                var transform = item.TransformToAncestor(scrollViewer);
+                itemPoint = transform.Transform(new Point(0, 0));
+            }
+
+            var viewportHeight = scrollViewer.ViewportHeight;
+            var itemHeight = item.ActualHeight;
+            var targetOffset = itemPoint.Y - (viewportHeight / 2) + (itemHeight / 2);
+            targetOffset = Math.Max(0, Math.Min(targetOffset, scrollViewer.ScrollableHeight));
+            return (targetOffset, itemPoint.Y, viewportHeight, itemHeight);
+        }
+
+        private Panel? FindItemsHostPanel(DependencyObject? root)
+        {
+            if (root == null) return null;
+            if (root is Panel p && p.IsItemsHost) return p;
+            int count = VisualTreeHelper.GetChildrenCount(root);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                var found = FindItemsHostPanel(child);
+                if (found != null) return found;
+            }
+            return null;
         }
 
         private TreeViewItem? FindTreeViewItemRecursive(ItemsControl container, object item)

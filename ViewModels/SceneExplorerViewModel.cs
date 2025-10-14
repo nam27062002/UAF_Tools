@@ -429,22 +429,19 @@ namespace DANCustomTools.ViewModels
 
         private void RequestScrollToItem(SceneTreeItemViewModel item)
         {
-            // Increased delay to ensure UI has fully rendered and containers are generated
-            Task.Delay(300).ContinueWith(_ =>
+            // Use a lightweight dispatcher callback (no long artificial delay)
+            App.Current?.Dispatcher.BeginInvoke(new Action(() =>
             {
-                App.Current?.Dispatcher.Invoke(() =>
+                try
                 {
-                    try
-                    {
-                        ScrollToItemRequested?.Invoke(this, item);
-                        LogService.Info($"📜 Requested scroll to item: {item.DisplayName}");
-                    }
-                    catch (Exception ex)
-                    {
-                        LogService.Error("Failed to request scroll to item", ex);
-                    }
-                });
-            });
+                    ScrollToItemRequested?.Invoke(this, item);
+                    LogService.Info($"📜 Requested scroll to item: {item.DisplayName}");
+                }
+                catch (Exception ex)
+                {
+                    LogService.Error("Failed to request scroll to item", ex);
+                }
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
 
