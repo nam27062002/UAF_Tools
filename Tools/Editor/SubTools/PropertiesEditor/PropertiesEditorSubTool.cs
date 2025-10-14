@@ -30,12 +30,10 @@ namespace DANCustomTools.Tools.Editor.SubTools.PropertiesEditor
         public override void Initialize()
         {
             base.Initialize();
-            // Any specific initialization for PropertiesEditor
         }
 
         public override void Cleanup()
         {
-            // Any specific cleanup for PropertiesEditor
             base.Cleanup();
         }
     }

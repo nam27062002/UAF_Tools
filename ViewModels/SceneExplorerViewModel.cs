@@ -379,7 +379,8 @@ namespace DANCustomTools.ViewModels
 
         private void RequestScrollToItem(SceneTreeItemViewModel item)
         {
-            Task.Delay(100).ContinueWith(_ =>
+            // Increased delay to ensure UI has fully rendered and containers are generated
+            Task.Delay(300).ContinueWith(_ =>
             {
                 App.Current?.Dispatcher.Invoke(() =>
                 {

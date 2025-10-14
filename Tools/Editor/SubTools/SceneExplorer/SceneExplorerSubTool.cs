@@ -30,12 +30,10 @@ namespace DANCustomTools.Tools.Editor.SubTools.SceneExplorer
         public override void Initialize()
         {
             base.Initialize();
-            // Any specific initialization for SceneExplorer
         }
 
         public override void Cleanup()
         {
-            // Any specific cleanup for SceneExplorer
             base.Cleanup();
         }
     }

@@ -46,7 +46,6 @@ namespace DANCustomTools.ViewModels
             {
                 if (SetProperty(ref _xmlDisplayText, value))
                 {
-                    // Send updated XML back to engine when user modifies it
                     if (!_suppressSend && !string.IsNullOrEmpty(value) && CurrentProperty.ObjectRef != uint.MaxValue)
                     {
                         var now = DateTime.UtcNow;
@@ -92,15 +91,11 @@ namespace DANCustomTools.ViewModels
             : base(logService)
         {
             _propertiesService = propertiesService ?? throw new ArgumentNullException(nameof(propertiesService));
-
-            // Subscribe to service events
             _propertiesService.PropertiesUpdated += OnPropertiesUpdated;
             _propertiesService.DataPathUpdated += OnDataPathUpdated;
 
-            // Subscribe to connection events
             SubscribeToConnectionEvents();
 
-            // Initialize commands
             DumpToFileCommand = new RelayCommand(() => ExecuteDumpToFile(null), () => CanExecuteDumpToFile(null));
             ClearPropertiesCommand = new RelayCommand(() => ExecuteClearProperties(null));
             ToggleCategoryCommand = new RelayCommand<SimplePropertyRow>(ToggleCategory);
@@ -118,7 +113,6 @@ namespace DANCustomTools.ViewModels
 
             LogService.Info($"Loading properties for object: {objectModel.FriendlyName} (Ref: {objectModel.ObjectRef})");
 
-            // Request properties from engine
             _propertiesService.RequestObjectProperties(objectModel.ObjectRef);
         }
 
@@ -126,8 +120,6 @@ namespace DANCustomTools.ViewModels
         {
             App.Current?.Dispatcher.Invoke(() =>
             {
-                // Check if this is the same object and data hasn't changed
-                // If so, skip reload to avoid losing focus during user editing
                 bool isSameObject = CurrentProperty.ObjectRef == propertyModel.ObjectRef;
                 bool isSameData = string.Equals(CurrentProperty.XmlData?.Trim(), propertyModel.XmlData?.Trim(), StringComparison.Ordinal);
 
@@ -139,17 +131,15 @@ namespace DANCustomTools.ViewModels
 
                 CurrentProperty = propertyModel;
                 _suppressSend = true;
-                IsLoadingFromEngine = true; // Signal that this is an engine update, not user input
+                IsLoadingFromEngine = true;
 
                 XmlDisplayText = propertyModel.XmlData;
                 HasData = propertyModel.HasData;
 
-                // We now host the original WinForms XMLPropertyGrid. Keep parsed list for future but not required.
                 ParsedProperties.Clear();
 
                 if (propertyModel.HasData)
                 {
-                    // Try to make XML more readable if possible
                     try
                     {
                         if (!string.IsNullOrEmpty(propertyModel.XmlData))
@@ -167,7 +157,7 @@ namespace DANCustomTools.ViewModels
 
                 LogService.Info($"Properties updated for object ref: {propertyModel.ObjectRef}");
 
-                IsLoadingFromEngine = false; // Reset flag after update
+                IsLoadingFromEngine = false;
                 _suppressSend = false;
             });
         }
@@ -185,7 +175,6 @@ namespace DANCustomTools.ViewModels
 
         private void ExecuteDumpToFile(object? parameter)
         {
-            // This would typically open a SaveFileDialog
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             var fileName = $"properties_dump_{timestamp}.xml";
 
@@ -209,7 +198,6 @@ namespace DANCustomTools.ViewModels
             LogService.Info("Properties cleared");
         }
 
-        // Called by the View when TechnoControls XMLPropertyGrid has parsed content and raises change
         public void LoadXmlIntoHostedGrid(TechnoControls.XMLPropertyGrid.XMLPropertyGrid grid)
         {
             if (grid == null) return;
@@ -247,12 +235,11 @@ namespace DANCustomTools.ViewModels
         public string Value { get; set; } = string.Empty;
         public int Level { get; set; } = 0;
         public bool IsCategory { get; set; } = false;
-        public string Path { get; set; } = string.Empty; // unique hierarchical path
-        public bool IsExpanded { get; set; } = true;      // for category rows
-        public bool IsVisible { get; set; } = true;       // computed visibility used for filtering
+        public string Path { get; set; } = string.Empty;
+        public bool IsExpanded { get; set; } = true;
+        public bool IsVisible { get; set; } = true;
     }
 
-    // Local helpers
     partial class PropertiesEditorViewModel
     {
         private void FlattenElement(XElement element, string prefix)
@@ -260,7 +247,6 @@ namespace DANCustomTools.ViewModels
             string name = string.IsNullOrEmpty(prefix) ? element.Name.LocalName : $"{prefix}/{element.Name.LocalName}";
             int level = string.IsNullOrEmpty(prefix) ? 0 : prefix.Count(c => c == '/') + 1;
 
-            // Add attributes as individual rows first
             foreach (var attr in element.Attributes())
             {
                 ParsedProperties.Add(new SimplePropertyRow
@@ -274,7 +260,6 @@ namespace DANCustomTools.ViewModels
                 });
             }
 
-            // If element has no child elements, take its value
             if (!element.HasElements)
             {
                 var val = element.Value?.Trim();
@@ -293,7 +278,6 @@ namespace DANCustomTools.ViewModels
             }
             else
             {
-                // For complex nodes (like LOCAL_POINTS), add a summary row and then recurse
                 int childCount = element.Elements().Count();
                 bool defaultExpanded = !(level == 0 && (element.Name.LocalName == "COMPONENTS" || element.Name.LocalName == "POS2D" || element.Name.LocalName == "SCALE"));
                 var cat = new SimplePropertyRow
@@ -317,20 +301,17 @@ namespace DANCustomTools.ViewModels
 
         private void ApplyVisibility()
         {
-            // Recompute VisibleProperties from ParsedProperties based on expanded categories
             VisibleProperties.Clear();
             var expandedPaths = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
             foreach (var row in ParsedProperties)
             {
                 bool visible = true;
-                // Any ancestor category not expanded => hide
                 string[] parts = row.Path.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length > 1)
                 {
                     string accum = parts[0];
                     for (int i = 1; i < parts.Length; i++)
                     {
-                        // find category row for accum
                         var cat = ParsedProperties.FirstOrDefault(r => r.Path == accum && r.IsCategory);
                         if (cat != null && !cat.IsExpanded)
                         {

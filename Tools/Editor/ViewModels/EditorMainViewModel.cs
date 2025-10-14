@@ -22,7 +22,6 @@ namespace DANCustomTools.Tools.Editor.ViewModels
             _toolManager = toolManager ?? throw new ArgumentNullException(nameof(toolManager));
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
-            // Initialize all three SubTool ViewModels directly
             SceneExplorerViewModel = CreateSceneExplorerViewModel();
             PropertiesEditorViewModel = CreatePropertiesEditorViewModel();
         }
@@ -35,7 +34,6 @@ namespace DANCustomTools.Tools.Editor.ViewModels
             }
             catch (Exception ex)
             {
-                // Log error but don't crash
                 System.Diagnostics.Debug.WriteLine($"Error creating SceneExplorerViewModel: {ex.Message}");
                 return null;
             }
@@ -49,7 +47,6 @@ namespace DANCustomTools.Tools.Editor.ViewModels
             }
             catch (Exception ex)
             {
-                // Log error but don't crash
                 System.Diagnostics.Debug.WriteLine($"Error creating PropertiesEditorViewModel: {ex.Message}");
                 return null;
             }
@@ -57,7 +54,6 @@ namespace DANCustomTools.Tools.Editor.ViewModels
 
         public override void Dispose()
         {
-            // Dispose child ViewModels
             SceneExplorerViewModel?.Dispose();
             PropertiesEditorViewModel?.Dispose();
             base.Dispose();

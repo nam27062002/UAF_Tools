@@ -27,7 +27,6 @@ namespace DANCustomTools.Tools.Editor
         {
             base.Initialize();
 
-            // Switch to SceneExplorer by default
             if (SubTools.Count > 0)
             {
                 SwitchToSubTool("SceneExplorer");

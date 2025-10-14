@@ -408,50 +408,105 @@ namespace DANCustomTools.Views
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine($"[Scroll] Attempting to scroll to: {item.DisplayName}");
+
+                // Force update layout first
                 SceneTreeView.UpdateLayout();
 
-                var treeViewItem = FindTreeViewItem(SceneTreeView, item);
+                // Find the TreeViewItem with multiple attempts
+                TreeViewItem? treeViewItem = null;
+                for (int attempt = 0; attempt < 3; attempt++)
+                {
+                    treeViewItem = FindTreeViewItemRecursive(SceneTreeView, item);
+                    if (treeViewItem != null)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[Scroll] Found TreeViewItem on attempt {attempt + 1}");
+                        break;
+                    }
+
+                    // Wait a bit and update layout again
+                    System.Diagnostics.Debug.WriteLine($"[Scroll] Not found, attempt {attempt + 1}, updating layout...");
+                    SceneTreeView.UpdateLayout();
+                    System.Threading.Thread.Sleep(50);
+                }
+
                 if (treeViewItem != null)
                 {
+                    System.Diagnostics.Debug.WriteLine($"[Scroll] Bringing item into view...");
                     treeViewItem.BringIntoView();
 
+                    // Center the item with a delay
                     Dispatcher.BeginInvoke(new Action(() =>
                     {
                         try
                         {
+                            System.Diagnostics.Debug.WriteLine($"[Scroll] Centering item...");
                             CenterTreeViewItem(treeViewItem);
                         }
                         catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"Failed to center tree view item: {ex.Message}");
+                            System.Diagnostics.Debug.WriteLine($"[Scroll] Failed to center: {ex.Message}");
                         }
                     }), DispatcherPriority.Loaded);
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Scroll] ERROR: Could not find TreeViewItem for {item.DisplayName}");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to scroll to tree view item: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[Scroll] Exception: {ex.Message}");
             }
         }
 
-        private TreeViewItem? FindTreeViewItem(ItemsControl container, object item)
+        private TreeViewItem? FindTreeViewItemRecursive(ItemsControl container, object item)
         {
             if (container == null) return null;
 
-            var treeViewItem = container.ItemContainerGenerator.ContainerFromItem(item) as TreeViewItem;
-            if (treeViewItem != null) return treeViewItem;
+            // Check if this container has the item directly
+            var directItem = container.ItemContainerGenerator.ContainerFromItem(item) as TreeViewItem;
+            if (directItem != null)
+            {
+                System.Diagnostics.Debug.WriteLine($"[FindItem] Found direct item: {item}");
+                return directItem;
+            }
 
+            // Recursively search through all children
             foreach (var childItem in container.Items)
             {
-                var childContainer = container.ItemContainerGenerator.ContainerFromItem(childItem) as ItemsControl;
+                var childContainer = container.ItemContainerGenerator.ContainerFromItem(childItem) as TreeViewItem;
                 if (childContainer != null)
                 {
-                    var result = FindTreeViewItem(childContainer, item);
-                    if (result != null) return result;
+                    // Make sure the child container is expanded and containers are generated
+                    if (!childContainer.IsExpanded)
+                    {
+                        childContainer.IsExpanded = true;
+                        childContainer.UpdateLayout();
+                    }
+
+                    // Check if this child is the item we're looking for
+                    if (childItem == item)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[FindItem] Found child item: {item}");
+                        return childContainer;
+                    }
+
+                    // Search recursively in children
+                    var result = FindTreeViewItemRecursive(childContainer, item);
+                    if (result != null)
+                    {
+                        return result;
+                    }
                 }
             }
 
             return null;
+        }
+
+        private TreeViewItem? FindTreeViewItem(ItemsControl container, object item)
+        {
+            return FindTreeViewItemRecursive(container, item);
         }
 
         private void CenterTreeViewItem(TreeViewItem item)

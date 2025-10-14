@@ -14,7 +14,6 @@ namespace DANCustomTools.Services
         : EnginePluginServiceBase(logService, engineHost), ISceneExplorerService
     {
 
-        // Queues for thread-safe communication
         private readonly Queue<string> _sceneSelectionQueue = new();
         private readonly Queue<IEnumerable<ObjectWithRefModel>> _objectSelectionQueue = new();
         private readonly Queue<(uint objectRef, string newName)> _renameQueue = new();
@@ -77,7 +76,6 @@ namespace DANCustomTools.Services
                 LogService.Info("Requesting scene tree from engine");
                 SendSceneTreeRequest();
 
-                // Schedule a retry after 2 seconds if no response
                 Task.Delay(2000).ContinueWith(_ =>
                 {
                     if (IsConnected && Plugin != null && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 1)
@@ -189,7 +187,6 @@ namespace DANCustomTools.Services
             model.UniqueName = uniqueName;
             model.Path = path;
 
-            // Extract actors
             uint actorCount = 0;
             blob.extract(ref actorCount);
             for (uint i = 0; i < actorCount; i++)
@@ -198,7 +195,6 @@ namespace DANCustomTools.Services
                 model.Actors.Add(actor);
             }
 
-            // Extract frises
             uint friseCount = 0;
             blob.extract(ref friseCount);
             for (uint i = 0; i < friseCount; i++)
@@ -207,7 +203,6 @@ namespace DANCustomTools.Services
                 model.Frises.Add(frise);
             }
 
-            // Extract child scenes
             uint childCount = 0;
             blob.extract(ref childCount);
             for (uint i = 0; i < childCount; i++)
@@ -282,7 +277,6 @@ namespace DANCustomTools.Services
 
         protected override void ProcessQueuedRequests()
         {
-            // Process scene selections
             lock (_sceneSelectionQueue)
             {
                 while (_sceneSelectionQueue.Count > 0)
@@ -292,7 +286,6 @@ namespace DANCustomTools.Services
                 }
             }
 
-            // Process object selections
             lock (_objectSelectionQueue)
             {
                 while (_objectSelectionQueue.Count > 0)
@@ -302,7 +295,6 @@ namespace DANCustomTools.Services
                 }
             }
 
-            // Process renames
             lock (_renameQueue)
             {
                 while (_renameQueue.Count > 0)
@@ -312,7 +304,6 @@ namespace DANCustomTools.Services
                 }
             }
 
-            // Process deletes
             lock (_deleteQueue)
             {
                 while (_deleteQueue.Count > 0)
@@ -322,7 +313,6 @@ namespace DANCustomTools.Services
                 }
             }
 
-            // Process duplicates
             lock (_duplicateQueue)
             {
                 while (_duplicateQueue.Count > 0)
@@ -332,7 +322,6 @@ namespace DANCustomTools.Services
                 }
             }
 
-            // Process offline scene tree request
             if (_offlineSceneTreePath != null)
             {
                 SendOfflineSceneTreeRequest(_offlineSceneTreePath);
@@ -344,16 +333,13 @@ namespace DANCustomTools.Services
         {
             LogService.Info("SceneExplorer first time connected - requesting scene tree");
 
-            // Try multiple approaches to wake up engine
             Task.Run(async () =>
             {
                 if (!IsConnected || Plugin == null) return;
 
-                // First attempt: immediate request
                 LogService.Info("Immediate scene tree request after connection");
                 RequestSceneTree();
 
-                // Second attempt: after delay
                 await Task.Delay(500);
                 if (IsConnected && Plugin != null)
                 {
@@ -361,7 +347,6 @@ namespace DANCustomTools.Services
                     SendSceneTreeRequest();
                 }
 
-                // Third attempt: aggressive retry
                 await Task.Delay(1000);
                 if (IsConnected && Plugin != null && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 2)
                 {
@@ -369,7 +354,6 @@ namespace DANCustomTools.Services
                     SendSceneTreeRequest();
                 }
 
-                // Fourth attempt: wake-up approach
                 await Task.Delay(2000);
                 if (IsConnected && Plugin != null && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 3)
                 {
@@ -391,16 +375,14 @@ namespace DANCustomTools.Services
 
             LogService.Info("Sending wake-up messages to engine");
 
-            // Try different message types to wake up engine
             try
             {
                 SendMessage(blob => blob.push("SendSceneTree"));
 
-                // Sometimes engines need a "ping" first
                 SendMessage(blob =>
                 {
                     blob.push("RequestSelection");
-                    blob.push(0u); // dummy object ref
+                    blob.push(0u);
                 });
             }
             catch (Exception ex)
