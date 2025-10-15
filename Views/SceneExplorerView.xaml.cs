@@ -445,11 +445,19 @@ namespace DANCustomTools.Views
 
         private void AttemptScroll()
         {
-            if (_pendingScrollItem == null) return;
+            var targetItem = _pendingScrollItem;
+            if (targetItem == null) return;
+            if (_disposed) return; // view disposed
+            if (SceneTreeView == null)
+            {
+                _pendingScrollItem = null;
+                return;
+            }
 
             if (_pendingScrollAttempts >= MaxScrollAttempts)
             {
-                System.Diagnostics.Debug.WriteLine($"[Scroll] Gave up after {_pendingScrollAttempts} attempts for {_pendingScrollItem.DisplayName}");
+                string name = targetItem.DisplayName ?? "(null)";
+                System.Diagnostics.Debug.WriteLine($"[Scroll] Gave up after {_pendingScrollAttempts} attempts for {name}");
                 _pendingScrollItem = null;
                 DetachLayoutUpdatedHandler();
                 return;
@@ -457,25 +465,27 @@ namespace DANCustomTools.Views
 
             _pendingScrollAttempts++;
 
-            // Ensure containers exist
             SceneTreeView.UpdateLayout();
 
-            var treeViewItem = FindTreeViewItemRecursive(SceneTreeView, _pendingScrollItem);
+            var treeViewItem = FindTreeViewItemRecursive(SceneTreeView, targetItem);
             if (treeViewItem == null)
             {
                 Dispatcher.BeginInvoke(new Action(AttemptScroll), DispatcherPriority.Background);
                 return;
             }
 
-            System.Diagnostics.Debug.WriteLine($"[Scroll] Found item on attempt {_pendingScrollAttempts}: {_pendingScrollItem.DisplayName}");
+            System.Diagnostics.Debug.WriteLine($"[Scroll] Found item on attempt {_pendingScrollAttempts}: {targetItem.DisplayName}");
 
-            if (!treeViewItem.IsFocused)
+            if (treeViewItem != null && !treeViewItem.IsFocused)
             {
                 treeViewItem.Focus();
                 System.Diagnostics.Debug.WriteLine("[Scroll] Focused item (WPF may auto BringIntoView)");
             }
 
-            ScheduleCentering(treeViewItem, 0);
+            if (treeViewItem != null)
+            {
+                ScheduleCentering(treeViewItem, 0);
+            }
 
             _pendingScrollItem = null;
             DetachLayoutUpdatedHandler();
