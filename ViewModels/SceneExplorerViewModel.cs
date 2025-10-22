@@ -687,10 +687,16 @@ namespace DANCustomTools.ViewModels
             // Apply visibility filter to all groups
             ApplyVisibilityFilterToGroups(sceneItem);
 
-            // Apply to child scenes
+            // Apply to child scenes and hide empty ones
             foreach (var childScene in sceneItem.Children.Where(c => c.ItemType == SceneTreeItemType.Scene).ToList())
             {
                 ApplyAllFiltersToScene(childScene);
+                
+                // Hide child scene if it has no visible content
+                if (!HasVisibleContent(childScene))
+                {
+                    childScene.IsVisible = false;
+                }
             }
         }
 
@@ -782,13 +788,48 @@ namespace DANCustomTools.ViewModels
                 c.ItemType == SceneTreeItemType.ActorSet || 
                 c.ItemType == SceneTreeItemType.FriseSet))
             {
+                bool hasVisibleItems = false;
+                
                 foreach (var item in group.Children)
                 {
                     // Áp dụng tất cả các filter: Object Type + Component + Search
                     bool shouldBeVisible = ShouldItemBeVisible(item);
                     item.IsVisible = shouldBeVisible;
+                    
+                    if (shouldBeVisible)
+                    {
+                        hasVisibleItems = true;
+                    }
+                }
+                
+                // Chỉ hiển thị group nếu có ít nhất một item visible
+                group.IsVisible = hasVisibleItems;
+            }
+        }
+
+        private bool HasVisibleContent(SceneTreeItemViewModel sceneItem)
+        {
+            // Check if any groups have visible items
+            foreach (var group in sceneItem.Children.Where(c => 
+                c.ItemType == SceneTreeItemType.ActorSet || 
+                c.ItemType == SceneTreeItemType.FriseSet))
+            {
+                if (group.IsVisible && group.Children.Any(item => item.IsVisible))
+                {
+                    return true;
                 }
             }
+            
+            // Check if any child scenes have visible content
+            foreach (var childScene in sceneItem.Children.Where(c => c.ItemType == SceneTreeItemType.Scene))
+            {
+                if (childScene.IsVisible && HasVisibleContent(childScene))
+                {
+                    return true;
+                }
+            }
+            
+            return false;
         }
 
         private bool ShouldItemBeVisible(SceneTreeItemViewModel item)
