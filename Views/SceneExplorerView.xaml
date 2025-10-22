@@ -518,11 +518,62 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
+                        <!-- Component Search Box -->
+                        <TextBox Grid.Row="0"
+                                 Text="{Binding ComponentSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,0,0,8"
+                                 Height="28"
+                                 FontSize="11"
+                                 Padding="8,4"
+                                 Background="{DynamicResource MaterialDesignBackground}"
+                                 BorderBrush="{DynamicResource MaterialDesignDivider}"
+                                 BorderThickness="1"
+                                 VerticalContentAlignment="Center">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="TextBox">
+                                                <Border Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="4">
+                                                    <Grid>
+                                                        <ScrollViewer x:Name="PART_ContentHost"
+                                                                     Focusable="False"
+                                                                     HorizontalScrollBarVisibility="Hidden"
+                                                                     VerticalScrollBarVisibility="Hidden"/>
+                                                        <TextBlock Text="Search components..."
+                                                                   Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                                   VerticalAlignment="Center"
+                                                                   Margin="8,0"
+                                                                   IsHitTestVisible="False">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </Grid>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+
                         <!-- Filter Controls -->
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,4">
                             <Button Content="Select All"
                                     Command="{Binding ClearFiltersCommand}"
                                     Padding="6,2"
@@ -551,7 +602,7 @@
                                 </Button.IsEnabled>
                             </Button>
 
-                            <TextBlock Text="{Binding AvailableComponents.Count, StringFormat={}{0} components available}"
+                            <TextBlock Text="{Binding FilteredComponents.Count, StringFormat={}{0} components shown}"
                                        VerticalAlignment="Center"
                                        Margin="0,0,0,0"
                                        FontSize="10"
@@ -559,11 +610,11 @@
                         </StackPanel>
 
                         <!-- Component List -->
-                        <ScrollViewer Grid.Row="2"
+                        <ScrollViewer Grid.Row="3"
                                       VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Disabled"
                                       Padding="2">
-                            <ItemsControl ItemsSource="{Binding AvailableComponents}">
+                            <ItemsControl ItemsSource="{Binding FilteredComponents}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Vertical" Margin="2"/>

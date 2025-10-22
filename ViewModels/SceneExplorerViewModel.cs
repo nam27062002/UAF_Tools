@@ -39,9 +39,11 @@ namespace DANCustomTools.ViewModels
         private ObjectWithRefModel? _selectedObject;
 
         private ObservableCollection<ComponentFilterModel> _availableComponents = new();
+        private ObservableCollection<ComponentFilterModel> _filteredComponents = new();
         private HashSet<string> _selectedComponents = new(StringComparer.OrdinalIgnoreCase);
         private List<ActorModel> _originalActors = new();
         private bool _isComponentFilterEnabled;
+        private string _componentSearchText = string.Empty;
 
     // Selection loop prevention / state flags
     private bool _isProcessingRuntimeSelection = false; // true while applying a runtime-originated selection
@@ -95,6 +97,61 @@ namespace DANCustomTools.ViewModels
         {
             get => _availableComponents;
             set => SetProperty(ref _availableComponents, value);
+        }
+
+        public ObservableCollection<ComponentFilterModel> FilteredComponents
+        {
+            get => _filteredComponents;
+            set => SetProperty(ref _filteredComponents, value);
+        }
+
+        public string ComponentSearchText
+        {
+            get => _componentSearchText;
+            set
+            {
+                if (SetProperty(ref _componentSearchText, value))
+                {
+                    FilterAvailableComponents();
+                }
+            }
+        }
+
+        private void FilterAvailableComponents()
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(ComponentSearchText))
+                {
+                    // Show all components when search is empty
+                    FilteredComponents.Clear();
+                    foreach (var component in AvailableComponents)
+                    {
+                        FilteredComponents.Add(component);
+                    }
+                }
+                else
+                {
+                    // Filter components based on search text
+                    var searchText = ComponentSearchText.ToLowerInvariant();
+                    FilteredComponents.Clear();
+                    
+                    foreach (var component in AvailableComponents)
+                    {
+                        if (component.DisplayText?.ToLowerInvariant().Contains(searchText) == true)
+                        {
+                            FilteredComponents.Add(component);
+                        }
+                    }
+                }
+                
+                OnPropertyChanged(nameof(FilteredComponents));
+                LogService.Info($"Filtered components: {FilteredComponents.Count}/{AvailableComponents.Count}");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Error filtering components", ex);
+            }
         }
 
         public HashSet<string> SelectedComponents
@@ -1393,6 +1450,9 @@ namespace DANCustomTools.ViewModels
                 {
                     AvailableComponents.Add(model);
                 }
+
+                // Populate filtered components based on current search
+                FilterAvailableComponents();
 
                 var total = AvailableComponents.Count + componentModels.Count; // AvailableComponents will be cleared below
                 var selectedCount = SelectedComponents.Count;
