@@ -238,7 +238,12 @@ namespace DANCustomTools.ViewModels
 
                 StoreOriginalActors(sceneTree);
 
-                ExtractAndPopulateComponents(_originalActors);
+                // Preserve existing component selections if filter is active
+                HashSet<string>? preserveSelection = IsComponentFilterEnabled
+                    ? new HashSet<string>(SelectedComponents, StringComparer.OrdinalIgnoreCase)
+                    : null;
+
+                ExtractAndPopulateComponents(_originalActors, preserveSelection);
 
                 var treeItem = CreateSceneTreeItem(sceneTree);
                 var items = new ObservableCollection<SceneTreeItemViewModel>();
@@ -246,6 +251,13 @@ namespace DANCustomTools.ViewModels
                 SceneTreeItems = items;
                 LogService.Info($"Updated scene tree: {sceneTree.UniqueName}");
                 LogService.Info($"SceneTreeItems.Count={SceneTreeItems.Count}");
+
+                // If component filter was active before refresh, reapply filtering
+                if (IsComponentFilterEnabled)
+                {
+                    LogService.Info("Reapplying component filters after scene refresh");
+                    ApplyComponentFilters();
+                }
 
             }, System.Windows.Threading.DispatcherPriority.Render);
         }
@@ -258,7 +270,12 @@ namespace DANCustomTools.ViewModels
 
                 StoreOriginalActorsFromScenes(sceneTrees);
 
-                ExtractAndPopulateComponents(_originalActors);
+                // Preserve existing component selections if filter is active
+                HashSet<string>? preserveSelection = IsComponentFilterEnabled
+                    ? new HashSet<string>(SelectedComponents, StringComparer.OrdinalIgnoreCase)
+                    : null;
+
+                ExtractAndPopulateComponents(_originalActors, preserveSelection);
 
                 SceneTreeItems.Clear();
                 foreach (var sceneTree in sceneTrees)
@@ -267,6 +284,12 @@ namespace DANCustomTools.ViewModels
                     SceneTreeItems.Add(treeItem);
                 }
                 LogService.Info($"Updated offline scene trees: {sceneTrees.Count} scenes");
+
+                if (IsComponentFilterEnabled)
+                {
+                    LogService.Info("Reapplying component filters after offline scenes refresh");
+                    ApplyComponentFilters();
+                }
             });
         }
 
@@ -955,7 +978,11 @@ namespace DANCustomTools.ViewModels
                     if (selectedItem.Model is SceneTreeModel scene)
                     {
                         LogService.Info($"Selected scene: {scene.UniqueName}");
-                        _sceneService.SelectScene(scene.UniqueName);
+                        // Avoid re-requesting scene tree if name is empty or same scene to prevent refresh that resets filters
+                        if (!string.IsNullOrWhiteSpace(scene.UniqueName))
+                        {
+                            _sceneService.SelectScene(scene.UniqueName);
+                        }
                         PropertiesEditor.ViewModel?.ClearProperties();
                         SelectedObject = null;
                     }
@@ -1204,7 +1231,7 @@ namespace DANCustomTools.ViewModels
         }
 
 
-        private void ExtractAndPopulateComponents(List<ActorModel> actors)
+        private void ExtractAndPopulateComponents(List<ActorModel> actors, HashSet<string>? preserveSelection = null)
         {
             try
             {
@@ -1216,7 +1243,15 @@ namespace DANCustomTools.ViewModels
                     var actorCount = actors.Count(a => _componentFilterService.ActorHasAnyComponent(a, new HashSet<string> { component }));
                     var model = new ComponentFilterModel(component, actorCount);
 
-                    model.IsSelected = true;
+                    // Preserve selection if provided; otherwise select all by default
+                    if (preserveSelection != null)
+                    {
+                        model.IsSelected = preserveSelection.Contains(component);
+                    }
+                    else
+                    {
+                        model.IsSelected = true;
+                    }
 
                     model.SelectionChanged += OnComponentSelectionChanged;
 
@@ -1229,9 +1264,10 @@ namespace DANCustomTools.ViewModels
                 }
 
                 SelectedComponents.Clear();
-                foreach (var component in allComponents)
+                foreach (var model in componentModels)
                 {
-                    SelectedComponents.Add(component);
+                    if (model.IsSelected)
+                        SelectedComponents.Add(model.ComponentName);
                 }
 
                 AvailableComponents.Clear();
@@ -1240,13 +1276,16 @@ namespace DANCustomTools.ViewModels
                     AvailableComponents.Add(model);
                 }
 
-                IsComponentFilterEnabled = false;
+                var total = AvailableComponents.Count + componentModels.Count; // AvailableComponents will be cleared below
+                var selectedCount = SelectedComponents.Count;
+                // If we had a preserved selection, re-compute based on that; otherwise all are selected
+                IsComponentFilterEnabled = preserveSelection != null ? selectedCount < allComponents.Count : false;
 
                 OnPropertyChanged(nameof(HasComponents));
                 OnPropertyChanged(nameof(SelectedComponents));
                 OnPropertyChanged(nameof(SelectedComponentsCount));
 
-                LogService.Info($"Populated {AvailableComponents.Count} unique components (all selected by default)");
+                LogService.Info($"Populated {allComponents.Count} unique components (selected {SelectedComponents.Count}{(preserveSelection != null ? " (preserved)" : " (all)")})");
             }
             catch (Exception ex)
             {
