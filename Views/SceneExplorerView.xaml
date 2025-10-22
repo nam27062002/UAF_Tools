@@ -646,7 +646,7 @@
                                                                         BorderThickness="{TemplateBinding BorderThickness}"
                                                                         CornerRadius="4"
                                                                         Padding="{TemplateBinding Padding}">
-                                                                    <ContentPresenter HorizontalAlignment="Center"
+                                                                    <ContentPresenter HorizontalAlignment="Left"
                                                                                       VerticalAlignment="Center"
                                                                                       TextBlock.Foreground="{TemplateBinding Foreground}"/>
                                                                 </Border>
