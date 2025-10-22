@@ -15,7 +15,7 @@
         Title="UAF Tools" Height="700" Width="1200"
         Background="{StaticResource GameEditorBackgroundBrush}"
         FontFamily="Segoe UI"
-        WindowState="Maximized">
+        WindowState="Normal">
 
     <Window.Resources>
         <!-- DataTemplate for EditorMainViewModel -->

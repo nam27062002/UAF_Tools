@@ -20,9 +20,9 @@
     <Grid>
         <Grid Margin="0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*" MinWidth="300" />   <!-- Left 50% -->
+                <ColumnDefinition Width="7*" MinWidth="300" />   <!-- Left 70% -->
                 <ColumnDefinition Width="Auto" />               <!-- Splitter -->
-                <ColumnDefinition Width="1*" MinWidth="350" />  <!-- Right 50% -->
+                <ColumnDefinition Width="3*" MinWidth="350" />  <!-- Right 30% -->
             </Grid.ColumnDefinitions>
 
             <!-- Left Panel: Scene Explorer -->
