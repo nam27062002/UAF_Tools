@@ -266,18 +266,18 @@ namespace DANCustomTools.ViewModels
                     _sceneService.ForceConnectionAttempt();
                     _propertiesService.ForceConnectionAttempt();
 
-                    _ = Task.Delay(1000).ContinueWith(_ =>
+                    _ = Task.Delay(2000).ContinueWith(_ =>
                     {
                         try
                         {
-                            if (_sceneService.IsConnected)
+                            if (_sceneService.IsConnected && _propertiesService.IsConnected)
                             {
-                                LogService.Info("Auto-requesting scene tree after connection attempt");
+                                LogService.Info("Services connected after force attempt, requesting scene tree");
                                 _sceneService.RequestSceneTree();
                             }
                             else
                             {
-                                LogService.Warning("Scene service still not connected after force connection attempt");
+                                LogService.Warning($"Services still not connected - Scene: {_sceneService.IsConnected}, Properties: {_propertiesService.IsConnected}");
                             }
                         }
                         catch (Exception ex)
@@ -290,7 +290,6 @@ namespace DANCustomTools.ViewModels
                 {
                     LogService.Info("Services already connected, requesting scene tree");
                     _sceneService.RequestSceneTree();
-
                 }
             }
             catch (Exception ex)

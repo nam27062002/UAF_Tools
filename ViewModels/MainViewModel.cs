@@ -220,31 +220,59 @@ namespace DANCustomTools.ViewModels
                     await engineIntegrationService.DisconnectAsync();
                 }
 
+                // Also disconnect from EngineHostService to ensure clean state
+                var engineHostService = serviceProvider.GetService(typeof(IEngineHostService)) as IEngineHostService;
+                if (engineHostService != null)
+                {
+                    System.Diagnostics.Debug.WriteLine("Disconnecting from EngineHost...");
+                    engineHostService.Disconnect();
+                }
+
                 // Wait a moment before reconnecting
-                await Task.Delay(1000);
+                await Task.Delay(2000);
 
                 // Reconnect to server
                 System.Diagnostics.Debug.WriteLine("Reconnecting to server...");
+                bool connectionSuccess = false;
                 if (engineIntegrationService != null)
                 {
-                    await engineIntegrationService.ConnectAsync();
+                    connectionSuccess = await engineIntegrationService.ConnectAsync();
                 }
 
-                // Refresh current tool to reload data
-                var currentTool = _toolManager.CurrentMainTool;
-                if (currentTool != null)
+                if (connectionSuccess)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Refreshing current tool: {currentTool.Name}");
-                    // Trigger refresh of current tool
-                    _toolManager.SwitchToMainTool(currentTool.Name);
+                    System.Diagnostics.Debug.WriteLine("Reconnection successful, refreshing current tool...");
+                    
+                    // Refresh current tool to reload data
+                    var currentTool = _toolManager.CurrentMainTool;
+                    if (currentTool != null)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Refreshing current tool: {currentTool.Name}");
+                        // Trigger refresh of current tool
+                        _toolManager.SwitchToMainTool(currentTool.Name);
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("Reconnection failed - engine may not be running");
+                    // Show user-friendly message
+                    System.Windows.MessageBox.Show(
+                        "Failed to reconnect to engine. Please ensure the engine is running and try again.",
+                        "Connection Failed",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
                 }
 
-                System.Diagnostics.Debug.WriteLine("Reconnection completed successfully");
+                System.Diagnostics.Debug.WriteLine("Reconnection process completed");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error during reconnection: {ex.Message}");
-                // You might want to show a message to the user here
+                System.Windows.MessageBox.Show(
+                    $"Reconnection failed: {ex.Message}",
+                    "Reconnection Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
             }
         }
     }
