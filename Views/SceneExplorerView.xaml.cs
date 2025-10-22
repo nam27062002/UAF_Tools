@@ -364,7 +364,7 @@ namespace DANCustomTools.Views
             foreach (var item in treeView.Items)
             {
                 var treeViewItem = treeView.ItemContainerGenerator.ContainerFromItem(item) as TreeViewItem;
-                ExpandTreeViewItem(treeViewItem);
+                ExpandTreeViewItemRecursive(treeViewItem);
             }
         }
 
@@ -388,6 +388,29 @@ namespace DANCustomTools.Views
             {
                 var subTreeViewItem = item.ItemContainerGenerator.ContainerFromItem(subItem) as TreeViewItem;
                 ExpandTreeViewItem(subTreeViewItem);
+            }
+        }
+
+        private void ExpandTreeViewItemRecursive(TreeViewItem? item)
+        {
+            if (item == null) return;
+
+           
+            if (item.Visibility == System.Windows.Visibility.Visible)
+            {
+                if (item.DataContext is SceneTreeItemViewModel viewModel && !viewModel.IsVisible)
+                {
+                    return;
+                }
+
+                item.IsExpanded = true;
+                item.UpdateLayout();
+
+                foreach (var subItem in item.Items)
+                {
+                    var subTreeViewItem = item.ItemContainerGenerator.ContainerFromItem(subItem) as TreeViewItem;
+                    ExpandTreeViewItemRecursive(subTreeViewItem);
+                }
             }
         }
 

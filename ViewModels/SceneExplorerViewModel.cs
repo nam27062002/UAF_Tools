@@ -627,6 +627,7 @@ namespace DANCustomTools.ViewModels
             {
                 AddGroupToScene(sceneItem, group);
             }
+            ApplyVisibilityFilterToGroups(sceneItem);
 
             var childScenesWithContent = 0;
             foreach (var childScene in sceneItem.Children.Where(c => c.ItemType == SceneTreeItemType.Scene).ToList())
@@ -647,6 +648,27 @@ namespace DANCustomTools.ViewModels
             if (sceneModel.Actors.Count > 0 || sceneModel.Frises.Count > 0 || childScenesWithContent > 0)
             {
                 LogService.Info($"Scene '{sceneModel.UniqueName}': {CurrentObjectTypeFilter}, A:{sceneModel.Actors.Count}, F:{sceneModel.Frises.Count}, Children:{childScenesWithContent}");
+            }
+        }
+
+        private void ApplyVisibilityFilterToGroups(SceneTreeItemViewModel sceneItem)
+        {
+            foreach (var group in sceneItem.Children.Where(c => 
+                c.ItemType == SceneTreeItemType.ActorSet || 
+                c.ItemType == SceneTreeItemType.FriseSet))
+            {
+                foreach (var item in group.Children)
+                {
+                    bool shouldBeVisible = CurrentObjectTypeFilter switch
+                    {
+                        ObjectTypeFilter.All => true,
+                        ObjectTypeFilter.ActorsOnly => item.ItemType == SceneTreeItemType.Actor,
+                        ObjectTypeFilter.FrisesOnly => item.ItemType == SceneTreeItemType.Frise,
+                        _ => true
+                    };
+
+                    item.IsVisible = shouldBeVisible;
+                }
             }
         }
 
