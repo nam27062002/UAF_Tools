@@ -281,15 +281,10 @@ namespace DANCustomTools.Views
             if (DataContext is not SceneExplorerViewModel viewModel)
                 return;
 
-            if (string.IsNullOrWhiteSpace(searchText))
-            {
-                ResetSearchVisibility(viewModel.SceneTreeItems);
-                return;
-            }
+            // Update ViewModel's SearchText property which will trigger ApplyAllFilters()
+            viewModel.SearchText = searchText ?? string.Empty;
 
-            var searchTextLower = searchText.ToLowerInvariant();
-            ApplySearchFilter(viewModel.SceneTreeItems, searchTextLower);
-
+            // Expand all visible items after applying filters
             ExpandAllTreeViewItems(SceneTreeView);
         }
 

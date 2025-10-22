@@ -255,7 +255,7 @@
                     <!-- Search Box -->
                     <TextBox Grid.Column="0"
                              Name="SearchTextBox"
-                             Text=""
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                              TextChanged="SearchTextBox_TextChanged"
                              Margin="0,0,8,0"
                              Height="32"

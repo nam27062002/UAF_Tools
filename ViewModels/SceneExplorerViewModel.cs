@@ -55,6 +55,7 @@ namespace DANCustomTools.ViewModels
         private System.Threading.Timer? _filterThrottleTimer;
         private ObjectTypeFilter? _pendingFilter;
         private readonly object _filterLock = new object();
+        private string _searchText = string.Empty;
 
         public override string SubToolName => "Scene Explorer";
 
@@ -126,6 +127,19 @@ namespace DANCustomTools.ViewModels
         public bool IsShowingAll => CurrentObjectTypeFilter == ObjectTypeFilter.All;
         public bool IsShowingActorsOnly => CurrentObjectTypeFilter == ObjectTypeFilter.ActorsOnly;
         public bool IsShowingFrisesOnly => CurrentObjectTypeFilter == ObjectTypeFilter.FrisesOnly;
+
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                if (SetProperty(ref _searchText, value))
+                {
+                    // Apply all filters when search text changes
+                    ApplyAllFilters();
+                }
+            }
+        }
 
         public SceneExplorerViewModel(
             ILogService logService,
@@ -255,8 +269,8 @@ namespace DANCustomTools.ViewModels
                 // If component filter was active before refresh, reapply filtering
                 if (IsComponentFilterEnabled)
                 {
-                    LogService.Info("Reapplying component filters after scene refresh");
-                    ApplyComponentFilters();
+                    LogService.Info("Reapplying all filters after scene refresh");
+                    ApplyAllFilters();
                 }
 
             }, System.Windows.Threading.DispatcherPriority.Render);
@@ -287,8 +301,8 @@ namespace DANCustomTools.ViewModels
 
                 if (IsComponentFilterEnabled)
                 {
-                    LogService.Info("Reapplying component filters after offline scenes refresh");
-                    ApplyComponentFilters();
+                    LogService.Info("Reapplying all filters after offline scenes refresh");
+                    ApplyAllFilters();
                 }
             });
         }
@@ -512,11 +526,11 @@ namespace DANCustomTools.ViewModels
                     {
                         try
                         {
-                            ApplyObjectTypeFilter();
+                            ApplyAllFilters();
                         }
                         catch (Exception ex)
                         {
-                            LogService.Error("Failed to apply pending object type filter", ex);
+                            LogService.Error("Failed to apply pending filters", ex);
                         }
                     }));
                 }
@@ -566,6 +580,60 @@ namespace DANCustomTools.ViewModels
             catch (Exception ex)
             {
                 LogService.Error("Failed to apply object type filter", ex);
+            }
+        }
+
+        /// <summary>
+        /// Áp dụng tất cả các filter (Object Type + Component + Search) cho toàn bộ tree
+        /// </summary>
+        private void ApplyAllFilters()
+        {
+            try
+            {
+                var startTime = DateTime.Now;
+
+                App.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    using (var deferRefresh = DeferTreeViewRefresh())
+                    {
+                        foreach (var sceneItem in SceneTreeItems.ToList())
+                        {
+                            ApplyAllFiltersToScene(sceneItem);
+                        }
+                    }
+
+                    OnPropertyChanged(nameof(SceneTreeItems));
+
+                    var duration = (DateTime.Now - startTime).TotalMilliseconds;
+                    LogService.Info($"All filters applied in {duration:F0}ms");
+                }));
+
+                LogService.Info("Scheduled application of all filters");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Failed to apply all filters", ex);
+            }
+        }
+
+        private void ApplyAllFiltersToScene(SceneTreeItemViewModel sceneItem)
+        {
+            if (sceneItem.Model is not SceneTreeModel sceneModel) return;
+
+            if (!_originalSceneGroups.TryGetValue(sceneItem, out var originalGroups))
+            {
+                return;
+            }
+
+            var (originalActorsGroup, originalFrisesGroup) = originalGroups;
+
+            // Apply visibility filter to all groups
+            ApplyVisibilityFilterToGroups(sceneItem);
+
+            // Apply to child scenes
+            foreach (var childScene in sceneItem.Children.Where(c => c.ItemType == SceneTreeItemType.Scene).ToList())
+            {
+                ApplyAllFiltersToScene(childScene);
             }
         }
 
@@ -659,17 +727,45 @@ namespace DANCustomTools.ViewModels
             {
                 foreach (var item in group.Children)
                 {
-                    bool shouldBeVisible = CurrentObjectTypeFilter switch
-                    {
-                        ObjectTypeFilter.All => true,
-                        ObjectTypeFilter.ActorsOnly => item.ItemType == SceneTreeItemType.Actor,
-                        ObjectTypeFilter.FrisesOnly => item.ItemType == SceneTreeItemType.Frise,
-                        _ => true
-                    };
-
+                    // Áp dụng tất cả các filter: Object Type + Component + Search
+                    bool shouldBeVisible = ShouldItemBeVisible(item);
                     item.IsVisible = shouldBeVisible;
                 }
             }
+        }
+
+        private bool ShouldItemBeVisible(SceneTreeItemViewModel item)
+        {
+            // 1. Object Type Filter
+            bool objectTypeMatch = CurrentObjectTypeFilter switch
+            {
+                ObjectTypeFilter.All => true,
+                ObjectTypeFilter.ActorsOnly => item.ItemType == SceneTreeItemType.Actor,
+                ObjectTypeFilter.FrisesOnly => item.ItemType == SceneTreeItemType.Frise,
+                _ => true
+            };
+
+            if (!objectTypeMatch) return false;
+
+            // 2. Component Filter (chỉ áp dụng cho actors)
+            if (item.ItemType == SceneTreeItemType.Actor && IsComponentFilterEnabled && SelectedComponents.Count > 0)
+            {
+                if (item.Model is ActorModel actor)
+                {
+                    var selectedComponentsSet = new HashSet<string>(SelectedComponents, StringComparer.OrdinalIgnoreCase);
+                    bool hasSelectedComponent = _componentFilterService.ActorHasAnyComponent(actor, selectedComponentsSet);
+                    if (!hasSelectedComponent) return false;
+                }
+            }
+
+            // 3. Search Filter
+            if (!string.IsNullOrWhiteSpace(SearchText))
+            {
+                bool searchMatch = item.DisplayName?.ToLowerInvariant().Contains(SearchText.ToLowerInvariant()) ?? false;
+                if (!searchMatch) return false;
+            }
+
+            return true;
         }
 
         private void AddGroupToScene(SceneTreeItemViewModel sceneItem, SceneTreeItemViewModel groupItem)
@@ -1343,7 +1439,7 @@ namespace DANCustomTools.ViewModels
                 OnPropertyChanged(nameof(SelectedComponents));
                 OnPropertyChanged(nameof(SelectedComponentsCount));
 
-                ApplyComponentFilters();
+                ApplyAllFilters();
 
                 var totalComponents = AvailableComponents.Count;
                 var selectedCount = SelectedComponents.Count;
@@ -1380,7 +1476,7 @@ namespace DANCustomTools.ViewModels
 
                 IsComponentFilterEnabled = false;
 
-                ApplyComponentFilters();
+                ApplyAllFilters();
 
                 LogService.Info("Reset all component filters - all components enabled, showing all actors");
             }
@@ -1408,7 +1504,7 @@ namespace DANCustomTools.ViewModels
 
                 IsComponentFilterEnabled = true;
 
-                ApplyComponentFilters();
+                ApplyAllFilters();
 
                 LogService.Info("Unselected all component filters - no components enabled, hiding all actors");
             }
@@ -1677,3 +1773,4 @@ namespace DANCustomTools.ViewModels
         }
     }
 }
+
