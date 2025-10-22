@@ -122,6 +122,13 @@ namespace DANCustomTools.Core.Services
             LogService.Info($"Stopping {PluginName} service");
 
             _cancellationTokenSource.Cancel();
+            try
+            {
+                Task.Delay(100, cancellationToken).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+            }
             _cancellationTokenSource.Dispose();
             _cancellationTokenSource = null; // Reset to allow restarting
 
@@ -141,6 +148,7 @@ namespace DANCustomTools.Core.Services
             // Allow derived classes to clean up
             OnServiceStopping();
 
+            LogService.Info($"{PluginName} service stopped");
             return Task.CompletedTask;
         }
 
@@ -369,8 +377,25 @@ namespace DANCustomTools.Core.Services
 
         public virtual void Dispose()
         {
-            StopAsync().GetAwaiter().GetResult();
-            _cancellationTokenSource?.Dispose();
+            try
+            {
+                LogService.Info($"Disposing {PluginName} service...");
+                StopAsync().GetAwaiter().GetResult();
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = null;
+                lock (ConnectionLock)
+                {
+                    _isConnected = false;
+                    _hasTriggeredFirstConnection = false;
+                    _plugin = null;
+                }
+                
+                LogService.Info($"{PluginName} service disposed successfully");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error($"Error disposing {PluginName} service", ex);
+            }
         }
     }
 }

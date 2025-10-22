@@ -130,7 +130,14 @@ namespace DANCustomTools.Services
 
                 if (_engineWrapper != null)
                 {
-                    await Task.Run(() => _engineWrapper.disconnect());
+                    try
+                    {
+                        await Task.Run(() => _engineWrapper.disconnect());
+                    }
+                    catch (Exception ex)
+                    {
+                        _logService?.Warning($"Error during engine disconnect: {ex.Message}");
+                    }
                     _engineWrapper = null;
                 }
 
@@ -467,19 +474,25 @@ namespace DANCustomTools.Services
         {
             try
             {
+                _logService?.Info("Disposing EngineIntegrationService...");
+
                 if (_cancellationTokenSource != null)
                 {
                     _cancellationTokenSource.Cancel();
-                    _cancellationTokenSource.Dispose();
                 }
 
                 if (_isConnected)
                 {
-                    // Fire and forget
-                    _ = DisconnectAsync();
+                    // Wait for disconnect to complete
+                    DisconnectAsync().GetAwaiter().GetResult();
                 }
 
-                _logService?.Info("EngineIntegrationService disposed");
+                if (_cancellationTokenSource != null)
+                {
+                    _cancellationTokenSource.Dispose();
+                }
+
+                _logService?.Info("EngineIntegrationService disposed successfully");
             }
             catch (Exception ex)
             {

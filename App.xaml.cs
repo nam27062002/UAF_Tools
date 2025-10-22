@@ -101,6 +101,7 @@ namespace DANCustomTools
             try
             {
                 System.Diagnostics.Debug.WriteLine("App OnExit - starting cleanup...");
+                StopAllServices();
 
                 if (_host != null)
                 {
@@ -122,12 +123,74 @@ namespace DANCustomTools
             }
             finally
             {
-                // Force process termination after 1 second
+                // Force process termination after 3 seconds to allow proper cleanup
                 var forceExitTimer = new System.Threading.Timer(_ =>
                 {
                     System.Diagnostics.Debug.WriteLine("Force terminating process...");
                     System.Environment.Exit(0);
-                }, null, 1000, System.Threading.Timeout.Infinite);
+                }, null, 3000, System.Threading.Timeout.Infinite);
+            }
+        }
+
+        private void StopAllServices()
+        {
+            try
+            {
+                if (ServiceProvider == null) return;
+
+                System.Diagnostics.Debug.WriteLine("Stopping all services...");
+
+                // Stop all services that implement IDisposable and have async operations
+                var servicesToStop = new[]
+                {
+                    typeof(ISceneExplorerService),
+                    typeof(IPropertiesEditorService),
+                    typeof(IEngineIntegrationService),
+                    typeof(IEngineHostService),
+                    typeof(IToolManager)
+                };
+
+                foreach (var serviceType in servicesToStop)
+                {
+                    try
+                    {
+                        var service = ServiceProvider.GetService(serviceType);
+                        if (service != null)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Stopping service: {serviceType.Name}");
+                            
+                            // Stop async services
+                            if (service is ISceneExplorerService sceneService)
+                            {
+                                sceneService.StopAsync().GetAwaiter().GetResult();
+                            }
+                            else if (service is IPropertiesEditorService propService)
+                            {
+                                propService.StopAsync().GetAwaiter().GetResult();
+                            }
+                            else if (service is IEngineIntegrationService engineService)
+                            {
+                                engineService.DisconnectAsync().GetAwaiter().GetResult();
+                            }
+                            
+                            // Dispose if implements IDisposable
+                            if (service is IDisposable disposableService)
+                            {
+                                disposableService.Dispose();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error stopping service {serviceType.Name}: {ex.Message}");
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine("All services stopped");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error stopping services: {ex.Message}");
             }
         }
     }

@@ -28,14 +28,23 @@ public partial class MainWindow : Window
         {
             System.Diagnostics.Debug.WriteLine("MainWindow closing - starting cleanup...");
 
+            // Dispose ViewModel first
             _viewModel?.Dispose();
             _viewModel = null;
 
             System.Diagnostics.Debug.WriteLine("ViewModel disposed");
 
+            // Clear DataContext
             DataContext = null;
 
             System.Diagnostics.Debug.WriteLine("DataContext cleared");
+
+            // Force garbage collection to help with cleanup
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            System.Diagnostics.Debug.WriteLine("MainWindow cleanup completed");
         }
         catch (Exception ex)
         {
