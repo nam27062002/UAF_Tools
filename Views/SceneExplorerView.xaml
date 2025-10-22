@@ -185,8 +185,12 @@
 
     <materialDesign:Card Style="{StaticResource GameEditorCardStyle}" Margin="0">
         <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" MinWidth="250" MaxWidth="400"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -194,7 +198,7 @@
             </Grid.RowDefinitions>
 
             <!-- Header with Connection Status -->
-            <Border Grid.Row="0"
+            <Border Grid.Row="0" Grid.ColumnSpan="3"
                     Background="{StaticResource GameEditorHeaderBrush}"
                     Padding="16,12">
                 <DockPanel>
@@ -241,7 +245,7 @@
             </Border>
 
             <!-- Search Box + Action Buttons Combined -->
-            <Border Grid.Row="1"
+            <Border Grid.Row="1" Grid.ColumnSpan="3"
                     Background="{DynamicResource MaterialDesignBackground}"
                     BorderThickness="0,1,0,1"
                     BorderBrush="{DynamicResource MaterialDesignDivider}"
@@ -481,14 +485,15 @@
             </Border>
 
             <!-- Component Filter Section -->
-            <Border Grid.Row="2"
-                    Margin="12,4,12,4"
+            <!-- Left Panel: Component Filters Section -->
+            <Border Grid.Row="2" Grid.Column="0"
+                    Margin="12,0,0,8"
                     Background="{DynamicResource MaterialDesignBackground}"
                     CornerRadius="4"
                     BorderThickness="1"
                     BorderBrush="{DynamicResource MaterialDesignDivider}">
                 <Expander Header="Component Filters"
-                          IsExpanded="False"
+                          IsExpanded="True"
                           Padding="8,4">
                     <Expander.HeaderTemplate>
                         <DataTemplate>
@@ -555,13 +560,13 @@
 
                         <!-- Component List -->
                         <ScrollViewer Grid.Row="2"
-                                      MaxHeight="120"
                                       VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled"
                                       Padding="2">
                             <ItemsControl ItemsSource="{Binding AvailableComponents}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <WrapPanel Orientation="Horizontal" Margin="2"/>
+                                        <StackPanel Orientation="Vertical" Margin="2"/>
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
@@ -572,8 +577,9 @@
                                                       Padding="8,3"
                                                       FontSize="10"
                                                       FontWeight="Medium"
-                                                      MinWidth="60"
-                                                      MinHeight="22">
+                                                      MinWidth="200"
+                                                      MinHeight="24"
+                                                      HorizontalAlignment="Stretch">
                                             <ToggleButton.Style>
                                                 <Style TargetType="ToggleButton">
                                                     <Setter Property="Background" Value="#F5F5F5"/>
@@ -629,9 +635,17 @@
                 </Expander>
             </Border>
 
-            <!-- Main Tree View -->
-            <Border Grid.Row="3"
-                    Margin="12,0,12,8"
+            <!-- Grid Splitter -->
+            <GridSplitter Grid.Row="2" Grid.Column="1"
+                          Width="5"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          Background="{DynamicResource MaterialDesignDivider}"
+                          ShowsPreview="True"/>
+
+            <!-- Right Panel: Main Tree View -->
+            <Border Grid.Row="2" Grid.Column="2"
+                    Margin="0,0,12,8"
                     Background="{DynamicResource MaterialDesignBackground}"
                     CornerRadius="6"
                     BorderThickness="1"
@@ -695,7 +709,7 @@
             </Border>
 
             <!-- Status Bar -->
-            <Border Grid.Row="4"
+            <Border Grid.Row="3" Grid.ColumnSpan="3"
                     Background="{StaticResource GameEditorBorderBrush}"
                     Padding="16,8">
                 <StackPanel Orientation="Horizontal">
