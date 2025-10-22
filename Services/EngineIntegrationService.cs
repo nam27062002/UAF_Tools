@@ -467,14 +467,18 @@ namespace DANCustomTools.Services
         {
             try
             {
-                _cancellationTokenSource?.Cancel();
-                _cancellationTokenSource?.Dispose();
-                
+                if (_cancellationTokenSource != null)
+                {
+                    _cancellationTokenSource.Cancel();
+                    _cancellationTokenSource.Dispose();
+                }
+
                 if (_isConnected)
                 {
-                    DisconnectAsync().Wait(5000); // Wait up to 5 seconds
+                    // Fire and forget
+                    _ = DisconnectAsync();
                 }
-                
+
                 _logService?.Info("EngineIntegrationService disposed");
             }
             catch (Exception ex)
