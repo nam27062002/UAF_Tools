@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+---
+Never create, edit, or delete files with extensions: .md, .mdx, .markdown.
+Only produce markdown in chat output when explicitly asked.
+If documentation is requested, ask before writing any .md file.

@@ -1,10 +1,12 @@
 #nullable enable
 using DANCustomTools.Core.Abstractions;
 using DANCustomTools.MVVM;
+using DANCustomTools.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -49,6 +51,7 @@ namespace DANCustomTools.ViewModels
         public ICommand SwitchToEditorCommand { get; }
         public ICommand SwitchToAssetsCookerCommand { get; }
         public ICommand LaunchTeaBoxCommand { get; }
+        public ICommand ReconnectCommand { get; }
 
         public MainViewModel(IToolManager toolManager)
         {
@@ -56,6 +59,7 @@ namespace DANCustomTools.ViewModels
             SwitchToEditorCommand = new RelayCommand(() => SwitchToMainTool("Editor"), () => !IsEditorActive);
             SwitchToAssetsCookerCommand = new RelayCommand(() => SwitchToMainTool("AssetsCooker"), () => !IsAssetsCookerActive);
             LaunchTeaBoxCommand = new RelayCommand(LaunchTeaBox);
+            ReconnectCommand = new AsyncRelayCommand(ReconnectToServer);
             _toolManager.CurrentMainToolChanged += OnCurrentMainToolChanged;
 
             LoadMainTools();
@@ -191,6 +195,56 @@ namespace DANCustomTools.ViewModels
             finally
             {
                 base.Dispose();
+            }
+        }
+
+        private async Task ReconnectToServer()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("Starting reconnection to server...");
+                
+                // Get services from DI container
+                var serviceProvider = Application.Current?.ServiceProvider;
+                if (serviceProvider == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("ServiceProvider not available");
+                    return;
+                }
+
+                // Disconnect from current server if connected
+                var engineIntegrationService = serviceProvider.GetService(typeof(IEngineIntegrationService)) as IEngineIntegrationService;
+                if (engineIntegrationService != null)
+                {
+                    System.Diagnostics.Debug.WriteLine("Disconnecting from current server...");
+                    await engineIntegrationService.DisconnectAsync();
+                }
+
+                // Wait a moment before reconnecting
+                await Task.Delay(1000);
+
+                // Reconnect to server
+                System.Diagnostics.Debug.WriteLine("Reconnecting to server...");
+                if (engineIntegrationService != null)
+                {
+                    await engineIntegrationService.ConnectAsync();
+                }
+
+                // Refresh current tool to reload data
+                var currentTool = _toolManager.CurrentMainTool;
+                if (currentTool != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Refreshing current tool: {currentTool.Name}");
+                    // Trigger refresh of current tool
+                    _toolManager.SwitchToMainTool(currentTool.Name);
+                }
+
+                System.Diagnostics.Debug.WriteLine("Reconnection completed successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error during reconnection: {ex.Message}");
+                // You might want to show a message to the user here
             }
         }
     }
