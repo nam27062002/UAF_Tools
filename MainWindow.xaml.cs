@@ -60,7 +60,7 @@ public partial class MainWindow : Window
         {
             System.Diagnostics.Debug.WriteLine("MainWindow closed - forcing app shutdown");
             
-            Application.Current.Shutdown();
+            System.Windows.Application.Current.Shutdown();
         }
         catch (Exception ex)
         {

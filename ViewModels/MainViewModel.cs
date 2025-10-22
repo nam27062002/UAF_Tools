@@ -140,19 +140,19 @@ namespace DANCustomTools.ViewModels
                 }
                 else
                 {
-                    MessageBox.Show($"TeaBox executable not found at: {teaBoxPath}",
+                    System.Windows.MessageBox.Show($"TeaBox executable not found at: {teaBoxPath}",
                                   "TeaBox Not Found",
-                                  MessageBoxButton.OK,
-                                  MessageBoxImage.Warning);
+                                  System.Windows.MessageBoxButton.OK,
+                                  System.Windows.MessageBoxImage.Warning);
                     System.Diagnostics.Debug.WriteLine($"[MainViewModel] TeaBox not found at: {teaBoxPath}");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to launch TeaBox: {ex.Message}",
+                System.Windows.MessageBox.Show($"Failed to launch TeaBox: {ex.Message}",
                               "Launch Error",
-                              MessageBoxButton.OK,
-                              MessageBoxImage.Error);
+                              System.Windows.MessageBoxButton.OK,
+                              System.Windows.MessageBoxImage.Error);
                 System.Diagnostics.Debug.WriteLine($"[MainViewModel] Error launching TeaBox: {ex.Message}");
             }
         }
@@ -205,7 +205,7 @@ namespace DANCustomTools.ViewModels
                 System.Diagnostics.Debug.WriteLine("Starting reconnection to server...");
                 
                 // Get services from DI container
-                var serviceProvider = Application.Current?.ServiceProvider;
+                var serviceProvider = App.ServiceProvider;
                 if (serviceProvider == null)
                 {
                     System.Diagnostics.Debug.WriteLine("ServiceProvider not available");

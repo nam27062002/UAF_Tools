@@ -604,19 +604,19 @@ namespace DANCustomTools.Views
         private (double targetOffset, double positionY, double viewportHeight, double itemHeight) CalculateCenterOffset(ScrollViewer scrollViewer, TreeViewItem item)
         {
             var itemsHost = (FindItemsHostPanel(scrollViewer.Content as DependencyObject) ?? (DependencyObject)scrollViewer) as UIElement;
-            Point itemPoint;
+            System.Windows.Point itemPoint;
             try
             {
                 if (itemsHost == null)
                 {
                     itemsHost = scrollViewer;
                 }
-                itemPoint = item.TranslatePoint(new Point(0, 0), itemsHost);
+                itemPoint = item.TranslatePoint(new System.Windows.Point(0, 0), itemsHost);
             }
             catch
             {
                 var transform = item.TransformToAncestor(scrollViewer);
-                itemPoint = transform.Transform(new Point(0, 0));
+                itemPoint = transform.Transform(new System.Windows.Point(0, 0));
             }
 
             var viewportHeight = scrollViewer.ViewportHeight;
@@ -626,10 +626,10 @@ namespace DANCustomTools.Views
             return (targetOffset, itemPoint.Y, viewportHeight, itemHeight);
         }
 
-        private Panel? FindItemsHostPanel(DependencyObject? root)
+        private System.Windows.Controls.Panel? FindItemsHostPanel(DependencyObject? root)
         {
             if (root == null) return null;
-            if (root is Panel p && p.IsItemsHost) return p;
+            if (root is System.Windows.Controls.Panel p && p.IsItemsHost) return p;
             int count = VisualTreeHelper.GetChildrenCount(root);
             for (int i = 0; i < count; i++)
             {
@@ -690,7 +690,7 @@ namespace DANCustomTools.Views
             if (scrollViewer == null) return;
 
             var transform = item.TransformToAncestor(scrollViewer);
-            var itemPosition = transform.Transform(new Point(0, 0));
+            var itemPosition = transform.Transform(new System.Windows.Point(0, 0));
 
             var viewportHeight = scrollViewer.ViewportHeight;
             var itemHeight = item.ActualHeight;
