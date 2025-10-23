@@ -3,6 +3,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -19,9 +20,11 @@ namespace DANCustomTools.Converters
             {
                 using (MemoryStream memory = new MemoryStream())
                 {
-                    if (OperatingSystem.IsWindows())
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
+#pragma warning disable CA1416 // Validate platform compatibility
                         bitmap.Save(memory, ImageFormat.Png);
+#pragma warning restore CA1416
                     }
                     else
                     {

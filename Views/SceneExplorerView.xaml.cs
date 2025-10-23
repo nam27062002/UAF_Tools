@@ -4,6 +4,7 @@ using MaterialDesignThemes.Wpf;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -142,7 +143,7 @@ namespace DANCustomTools.Views
                 var renameMenuItem = new MenuItem
                 {
                     Header = "Rename Object",
-                    Icon = OperatingSystem.IsWindows() ? new PackIcon { Kind = PackIconKind.Rename, Width = 16, Height = 16 } : null
+                    Icon = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? new PackIcon { Kind = PackIconKind.Rename, Width = 16, Height = 16 } : null
                 };
                 renameMenuItem.Click += (s, e) => ShowRenameDialog(selectedItem, viewModel);
                 contextMenu.Items.Add(renameMenuItem);
@@ -153,7 +154,7 @@ namespace DANCustomTools.Views
             {
                 Header = "Duplicate Object",
                 Command = viewModel.DuplicateCommand,
-                Icon = OperatingSystem.IsWindows() ? new PackIcon { Kind = PackIconKind.ContentDuplicate, Width = 16, Height = 16 } : null
+                Icon = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? new PackIcon { Kind = PackIconKind.ContentDuplicate, Width = 16, Height = 16 } : null
             };
             contextMenu.Items.Add(duplicateMenuItem);
 
@@ -163,7 +164,7 @@ namespace DANCustomTools.Views
             {
                 Header = "Delete Object",
                 Command = viewModel.DeleteCommand,
-                Icon = OperatingSystem.IsWindows() ? new PackIcon { Kind = PackIconKind.Delete, Width = 16, Height = 16 } : null,
+                Icon = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? new PackIcon { Kind = PackIconKind.Delete, Width = 16, Height = 16 } : null,
                 Foreground = new SolidColorBrush(Colors.Red)
             };
             contextMenu.Items.Add(deleteMenuItem);

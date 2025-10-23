@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using DANCustomTools.ViewModels;
 using TechnoControls.XMLPropertyGrid;
 using System.Windows.Forms.Integration;
+using System.Runtime.InteropServices;
 
 namespace DANCustomTools.Views
 {
@@ -17,9 +18,9 @@ namespace DANCustomTools.Views
             };
             Unloaded += (s, e) =>
             {
-                if (_xmlPropertyGrid != null && OperatingSystem.IsWindows())
+                if (_xmlPropertyGrid != null && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    _xmlPropertyGrid.propertiesChanged -= XmlPropertyGrid_propertiesChanged;
+                    _xmlPropertyGrid!.propertiesChanged -= XmlPropertyGrid_propertiesChanged;
                     _xmlPropertyGrid.CloseAll();
                 }
             };
@@ -29,13 +30,13 @@ namespace DANCustomTools.Views
                 if (e.NewValue is PropertiesEditorViewModel vm)
                 {
                     EnsureWindowsFormsHost();
-                    if (_xmlPropertyGrid != null && OperatingSystem.IsWindows())
+                    if (_xmlPropertyGrid != null && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        vm.LoadXmlIntoHostedGrid(_xmlPropertyGrid);
+                        vm.LoadXmlIntoHostedGrid(_xmlPropertyGrid!);
                     }
                     vm.PropertyChanged += (s2, e2) =>
                     {
-                        if (_xmlPropertyGrid == null || !OperatingSystem.IsWindows())
+                        if (_xmlPropertyGrid == null || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                             return;
 
                         if (e2.PropertyName == nameof(PropertiesEditorViewModel.XmlDisplayText)
@@ -43,14 +44,14 @@ namespace DANCustomTools.Views
                         {
                             if (vm.IsLoadingFromEngine)
                             {
-                                vm.LoadXmlIntoHostedGrid(_xmlPropertyGrid);
+                                vm.LoadXmlIntoHostedGrid(_xmlPropertyGrid!);
                             }
                         }
                         else if (e2.PropertyName == nameof(PropertiesEditorViewModel.DataPath))
                         {
-                            if (OperatingSystem.IsWindows())
+                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                             {
-                                _xmlPropertyGrid.setDataPath(vm.DataPath);
+                                _xmlPropertyGrid!.setDataPath(vm.DataPath);
                             }
                         }
                     };
@@ -67,7 +68,7 @@ namespace DANCustomTools.Views
         private void XmlPropertyGrid_propertiesChanged(object sender, PropertiesChangedEventArgs e)
         {
             if (ViewModel == null) return;
-            if (!OperatingSystem.IsWindows()) return;
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
             
             try
             {
@@ -135,7 +136,7 @@ namespace DANCustomTools.Views
         private void EnsureWindowsFormsHost()
         {
             if (_xmlPropertyGrid != null) return;
-            if (!OperatingSystem.IsWindows()) return;
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
             
             var host = new WindowsFormsHost();
             _xmlPropertyGrid = new XMLPropertyGrid();
@@ -144,10 +145,10 @@ namespace DANCustomTools.Views
             WinFormsHostContainer.Children.Clear();
             WinFormsHostContainer.Children.Add(host);
             if (ViewModel == null) return;
-            ViewModel.LoadXmlIntoHostedGrid(_xmlPropertyGrid);
+            ViewModel.LoadXmlIntoHostedGrid(_xmlPropertyGrid!);
             if (!string.IsNullOrEmpty(ViewModel.DataPath))
             {
-                _xmlPropertyGrid.setDataPath(ViewModel.DataPath);
+                _xmlPropertyGrid!.setDataPath(ViewModel.DataPath);
             }
         }
     }

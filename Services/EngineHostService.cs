@@ -3,6 +3,7 @@ using PluginCommon;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace DANCustomTools.Services
@@ -35,12 +36,14 @@ namespace DANCustomTools.Services
 				culture.NumberFormat.NumberDecimalSeparator = ".";
 				Thread.CurrentThread.CurrentCulture = culture;
 
-				if (OperatingSystem.IsWindows())
+				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				{
+#pragma warning disable CA1416 // Validate platform compatibility
 					var cmdArgs = new CommandLineArgs(arguments);
 					_settings = new EngineSettings(cmdArgs);
 					_engine = new engineWrapper("");
 					_logService.Info($"EngineHost initialized on port {_settings.Port}");
+#pragma warning restore CA1416
 				}
 				else
 				{
@@ -89,9 +92,11 @@ namespace DANCustomTools.Services
 
 					try
 					{
-						if (OperatingSystem.IsWindows() && _settings != null)
+						if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && _settings != null)
 						{
+#pragma warning disable CA1416 // Validate platform compatibility
 							connected = _engine.connectToHost("127.0.0.1", _settings.Port);
+#pragma warning restore CA1416
 						}
 						else
 						{

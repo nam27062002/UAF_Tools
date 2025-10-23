@@ -3,6 +3,7 @@ using DANCustomTools.Services;
 using PluginCommon;
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -99,9 +100,11 @@ namespace DANCustomTools.Core.Services
                 // Set culture for decimal separator consistency
                 SetCultureForDecimalSeparator();
 
-                if (OperatingSystem.IsWindows())
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
+#pragma warning disable CA1416 // Validate platform compatibility
                     LogService.Info($"Starting {PluginName} service on port {EngineHost.Settings?.Port}");
+#pragma warning restore CA1416
                 }
                 else
                 {

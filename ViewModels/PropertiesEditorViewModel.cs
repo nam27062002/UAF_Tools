@@ -3,6 +3,7 @@ using System;
 using System.Windows.Input;
 using System.Xml.Linq;
 using System.Linq;
+using System.Runtime.InteropServices;
 using DANCustomTools.Core.ViewModels;
 using DANCustomTools.MVVM;
 using DANCustomTools.Models.PropertiesEditor;
@@ -201,15 +202,19 @@ namespace DANCustomTools.ViewModels
         public void LoadXmlIntoHostedGrid(TechnoControls.XMLPropertyGrid.XMLPropertyGrid grid)
         {
             if (grid == null) return;
-            if (!OperatingSystem.IsWindows()) return;
-            
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
+
             if (HasData && !string.IsNullOrEmpty(XmlDisplayText))
             {
+#pragma warning disable CA1416 // Validate platform compatibility
                 grid.ParseXML(XmlDisplayText);
+#pragma warning restore CA1416
             }
             else
             {
+#pragma warning disable CA1416 // Validate platform compatibility
                 grid.Clear();
+#pragma warning restore CA1416
             }
         }
 
