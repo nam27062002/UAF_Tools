@@ -19,7 +19,14 @@ namespace DANCustomTools.Converters
             {
                 using (MemoryStream memory = new MemoryStream())
                 {
-                    bitmap.Save(memory, ImageFormat.Png);
+                    if (OperatingSystem.IsWindows())
+                    {
+                        bitmap.Save(memory, ImageFormat.Png);
+                    }
+                    else
+                    {
+                        throw new PlatformNotSupportedException("Image conversion is only supported on Windows");
+                    }
                     memory.Position = 0;
 
                     BitmapImage bitmapImage = new BitmapImage();

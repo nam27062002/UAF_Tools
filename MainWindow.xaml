@@ -136,6 +136,53 @@
                             </Style>
                         </Button.Style>
                     </Button>
+
+                    <ComboBox ItemsSource="{Binding AvailableProjects}"
+                              SelectedItem="{Binding SelectedProject}"
+                              DisplayMemberPath="Name"
+                              Width="200"
+                              Margin="8,0,0,0"
+                              VerticalAlignment="Center"
+                              FontSize="12"/>
+
+                    <Button Content="Open Project"
+                            Command="{Binding OpenProjectCommand}"
+                            Background="{StaticResource GameEditorPrimaryBrush}"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Padding="12,6"
+                            Margin="8,0,0,0"
+                            FontSize="12"
+                            FontWeight="Medium"
+                            Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    CornerRadius="4"
+                                                    Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"
+                                                                  TextBlock.Foreground="{TemplateBinding Foreground}"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#1D4ED8"/>
+                                                </Trigger>
+                                                <Trigger Property="IsPressed" Value="True">
+                                                    <Setter Property="Background" Value="#1E40AF"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </StackPanel>
             </DockPanel>
         </Border>

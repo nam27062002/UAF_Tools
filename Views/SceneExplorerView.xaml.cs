@@ -142,7 +142,7 @@ namespace DANCustomTools.Views
                 var renameMenuItem = new MenuItem
                 {
                     Header = "Rename Object",
-                    Icon = new PackIcon { Kind = PackIconKind.Rename, Width = 16, Height = 16 }
+                    Icon = OperatingSystem.IsWindows() ? new PackIcon { Kind = PackIconKind.Rename, Width = 16, Height = 16 } : null
                 };
                 renameMenuItem.Click += (s, e) => ShowRenameDialog(selectedItem, viewModel);
                 contextMenu.Items.Add(renameMenuItem);
@@ -153,7 +153,7 @@ namespace DANCustomTools.Views
             {
                 Header = "Duplicate Object",
                 Command = viewModel.DuplicateCommand,
-                Icon = new PackIcon { Kind = PackIconKind.ContentDuplicate, Width = 16, Height = 16 }
+                Icon = OperatingSystem.IsWindows() ? new PackIcon { Kind = PackIconKind.ContentDuplicate, Width = 16, Height = 16 } : null
             };
             contextMenu.Items.Add(duplicateMenuItem);
 
@@ -163,7 +163,7 @@ namespace DANCustomTools.Views
             {
                 Header = "Delete Object",
                 Command = viewModel.DeleteCommand,
-                Icon = new PackIcon { Kind = PackIconKind.Delete, Width = 16, Height = 16 },
+                Icon = OperatingSystem.IsWindows() ? new PackIcon { Kind = PackIconKind.Delete, Width = 16, Height = 16 } : null,
                 Foreground = new SolidColorBrush(Colors.Red)
             };
             contextMenu.Items.Add(deleteMenuItem);

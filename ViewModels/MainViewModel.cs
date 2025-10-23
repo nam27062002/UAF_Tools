@@ -6,19 +6,28 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
 namespace DANCustomTools.ViewModels
 {
+    public class ProjectItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Path { get; set; } = string.Empty;
+    }
+
     public class MainViewModel : ViewModelBase
     {
         private readonly IToolManager _toolManager;
         private ViewModelBase? _currentToolViewModel;
         private string _currentToolName = "Editor";
+        private ProjectItem? _selectedProject;
 
         public ObservableCollection<IMainTool> MainTools { get; } = new();
+        public ObservableCollection<ProjectItem> AvailableProjects { get; } = new();
 
         public ViewModelBase? CurrentToolViewModel
         {
@@ -48,10 +57,23 @@ namespace DANCustomTools.ViewModels
         public bool IsEditorActive => CurrentToolName == "Editor";
         public bool IsAssetsCookerActive => CurrentToolName == "AssetsCooker";
 
+        public ProjectItem? SelectedProject
+        {
+            get => _selectedProject;
+            set
+            {
+                if (SetProperty(ref _selectedProject, value))
+                {
+                    (OpenProjectCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                }
+            }
+        }
+
         public ICommand SwitchToEditorCommand { get; }
         public ICommand SwitchToAssetsCookerCommand { get; }
         public ICommand LaunchTeaBoxCommand { get; }
         public ICommand ReconnectCommand { get; }
+        public ICommand OpenProjectCommand { get; }
 
         public MainViewModel(IToolManager toolManager)
         {
@@ -60,9 +82,11 @@ namespace DANCustomTools.ViewModels
             SwitchToAssetsCookerCommand = new RelayCommand(() => SwitchToMainTool("AssetsCooker"), () => !IsAssetsCookerActive);
             LaunchTeaBoxCommand = new RelayCommand(LaunchTeaBox);
             ReconnectCommand = new AsyncRelayCommand(ReconnectToServer);
+            OpenProjectCommand = new RelayCommand(OpenProject, () => SelectedProject != null);
             _toolManager.CurrentMainToolChanged += OnCurrentMainToolChanged;
 
             LoadMainTools();
+            LoadProjects();
 
             System.Windows.Application.Current.Dispatcher.BeginInvoke(
                 System.Windows.Threading.DispatcherPriority.Loaded,
@@ -76,6 +100,61 @@ namespace DANCustomTools.ViewModels
             foreach (var mainTool in _toolManager.MainTools)
             {
                 MainTools.Add(mainTool);
+            }
+        }
+
+        private void LoadProjects()
+        {
+            try
+            {
+                string projectsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Projects");
+                projectsPath = Path.GetFullPath(projectsPath);
+
+                if (!Directory.Exists(projectsPath))
+                {
+                    System.Diagnostics.Debug.WriteLine($"Projects directory not found: {projectsPath}");
+                    return;
+                }
+
+                var slnFiles = Directory.GetFiles(projectsPath, "*.sln", SearchOption.AllDirectories);
+
+                AvailableProjects.Clear();
+                foreach (var slnFile in slnFiles)
+                {
+                    string name = Path.GetFileNameWithoutExtension(slnFile);
+                    AvailableProjects.Add(new ProjectItem { Name = name, Path = slnFile });
+                }
+
+                System.Diagnostics.Debug.WriteLine($"Loaded {AvailableProjects.Count} projects from {projectsPath}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading projects: {ex.Message}");
+            }
+        }
+
+        private void OpenProject()
+        {
+            if (SelectedProject == null) return;
+
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = SelectedProject.Path,
+                    UseShellExecute = true
+                };
+
+                Process.Start(startInfo);
+                System.Diagnostics.Debug.WriteLine($"Opened project: {SelectedProject.Name} at {SelectedProject.Path}");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to open project: {ex.Message}",
+                              "Open Project Error",
+                              System.Windows.MessageBoxButton.OK,
+                              System.Windows.MessageBoxImage.Error);
+                System.Diagnostics.Debug.WriteLine($"Error opening project: {ex.Message}");
             }
         }
 

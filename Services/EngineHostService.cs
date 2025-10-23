@@ -1,3 +1,4 @@
+#nullable enable
 using PluginCommon;
 using System;
 using System.Collections.Generic;
@@ -34,10 +35,17 @@ namespace DANCustomTools.Services
 				culture.NumberFormat.NumberDecimalSeparator = ".";
 				Thread.CurrentThread.CurrentCulture = culture;
 
-				var cmdArgs = new CommandLineArgs(arguments);
-				_settings = new EngineSettings(cmdArgs);
-				_engine = new engineWrapper("");
-				_logService.Info($"EngineHost initialized on port {_settings.Port}");
+				if (OperatingSystem.IsWindows())
+				{
+					var cmdArgs = new CommandLineArgs(arguments);
+					_settings = new EngineSettings(cmdArgs);
+					_engine = new engineWrapper("");
+					_logService.Info($"EngineHost initialized on port {_settings.Port}");
+				}
+				else
+				{
+					throw new PlatformNotSupportedException("EngineHost is only supported on Windows");
+				}
 			}
 		}
 
@@ -81,7 +89,14 @@ namespace DANCustomTools.Services
 
 					try
 					{
-						connected = _engine.connectToHost("127.0.0.1", _settings.Port);
+						if (OperatingSystem.IsWindows() && _settings != null)
+						{
+							connected = _engine.connectToHost("127.0.0.1", _settings.Port);
+						}
+						else
+						{
+							connected = false;
+						}
 						if (connected)
 						{
 							_logService.Info("EngineHost connected");

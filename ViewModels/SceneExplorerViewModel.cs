@@ -709,7 +709,6 @@ namespace DANCustomTools.ViewModels
             }
 
             var (originalActorsGroup, originalFrisesGroup) = originalGroups;
-            bool hasVisibleContent = false;
 
             var groupsToAdd = new List<SceneTreeItemViewModel>();
             var groupsToRemove = sceneItem.Children.Where(c =>
@@ -722,12 +721,10 @@ namespace DANCustomTools.ViewModels
                     if (originalActorsGroup != null && sceneModel.Actors.Count > 0)
                     {
                         groupsToAdd.Add(originalActorsGroup);
-                        hasVisibleContent = true;
                     }
                     if (originalFrisesGroup != null && sceneModel.Frises.Count > 0)
                     {
                         groupsToAdd.Add(originalFrisesGroup);
-                        hasVisibleContent = true;
                     }
                     break;
 
@@ -735,7 +732,6 @@ namespace DANCustomTools.ViewModels
                     if (originalActorsGroup != null && sceneModel.Actors.Count > 0)
                     {
                         groupsToAdd.Add(originalActorsGroup);
-                        hasVisibleContent = true;
                     }
                     break;
 
@@ -743,7 +739,6 @@ namespace DANCustomTools.ViewModels
                     if (originalFrisesGroup != null && sceneModel.Frises.Count > 0)
                     {
                         groupsToAdd.Add(originalFrisesGroup);
-                        hasVisibleContent = true;
                     }
                     break;
             }
@@ -766,7 +761,6 @@ namespace DANCustomTools.ViewModels
 
                 if (HasVisibleGroups(childScene))
                 {
-                    hasVisibleContent = true;
                     childScenesWithContent++;
                 }
                 else

@@ -133,7 +133,7 @@ namespace DANCustomTools.ViewModels
                 _suppressSend = true;
                 IsLoadingFromEngine = true;
 
-                XmlDisplayText = propertyModel.XmlData;
+                XmlDisplayText = propertyModel.XmlData ?? string.Empty;
                 HasData = propertyModel.HasData;
 
                 ParsedProperties.Clear();
@@ -151,7 +151,7 @@ namespace DANCustomTools.ViewModels
                     catch (Exception ex)
                     {
                         LogService.Info($"XML parsing for formatting failed: {ex.Message}");
-                        XmlDisplayText = propertyModel.XmlData;
+                        XmlDisplayText = propertyModel.XmlData ?? string.Empty;
                     }
                 }
 
@@ -201,6 +201,8 @@ namespace DANCustomTools.ViewModels
         public void LoadXmlIntoHostedGrid(TechnoControls.XMLPropertyGrid.XMLPropertyGrid grid)
         {
             if (grid == null) return;
+            if (!OperatingSystem.IsWindows()) return;
+            
             if (HasData && !string.IsNullOrEmpty(XmlDisplayText))
             {
                 grid.ParseXML(XmlDisplayText);

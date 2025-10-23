@@ -99,7 +99,14 @@ namespace DANCustomTools.Core.Services
                 // Set culture for decimal separator consistency
                 SetCultureForDecimalSeparator();
 
-                LogService.Info($"Starting {PluginName} service on port {EngineHost.Settings?.Port}");
+                if (OperatingSystem.IsWindows())
+                {
+                    LogService.Info($"Starting {PluginName} service on port {EngineHost.Settings?.Port}");
+                }
+                else
+                {
+                    LogService.Info($"Starting {PluginName} service (Windows-specific features disabled)");
+                }
 
                 // Initialize service-specific components
                 await OnServiceInitializingAsync();

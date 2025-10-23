@@ -1,4 +1,5 @@
-﻿using DANCustomTools.ViewModels;
+﻿#nullable enable
+using DANCustomTools.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.ComponentModel;

@@ -17,7 +17,7 @@ namespace DANCustomTools.Views
             };
             Unloaded += (s, e) =>
             {
-                if (_xmlPropertyGrid != null)
+                if (_xmlPropertyGrid != null && OperatingSystem.IsWindows())
                 {
                     _xmlPropertyGrid.propertiesChanged -= XmlPropertyGrid_propertiesChanged;
                     _xmlPropertyGrid.CloseAll();
@@ -29,13 +29,13 @@ namespace DANCustomTools.Views
                 if (e.NewValue is PropertiesEditorViewModel vm)
                 {
                     EnsureWindowsFormsHost();
-                    if (_xmlPropertyGrid != null)
+                    if (_xmlPropertyGrid != null && OperatingSystem.IsWindows())
                     {
                         vm.LoadXmlIntoHostedGrid(_xmlPropertyGrid);
                     }
                     vm.PropertyChanged += (s2, e2) =>
                     {
-                        if (_xmlPropertyGrid == null)
+                        if (_xmlPropertyGrid == null || !OperatingSystem.IsWindows())
                             return;
 
                         if (e2.PropertyName == nameof(PropertiesEditorViewModel.XmlDisplayText)
@@ -48,7 +48,10 @@ namespace DANCustomTools.Views
                         }
                         else if (e2.PropertyName == nameof(PropertiesEditorViewModel.DataPath))
                         {
-                            _xmlPropertyGrid.setDataPath(vm.DataPath);
+                            if (OperatingSystem.IsWindows())
+                            {
+                                _xmlPropertyGrid.setDataPath(vm.DataPath);
+                            }
                         }
                     };
                 }
@@ -64,6 +67,8 @@ namespace DANCustomTools.Views
         private void XmlPropertyGrid_propertiesChanged(object sender, PropertiesChangedEventArgs e)
         {
             if (ViewModel == null) return;
+            if (!OperatingSystem.IsWindows()) return;
+            
             try
             {
                 if (!string.IsNullOrEmpty(e.xmlText))
@@ -130,6 +135,8 @@ namespace DANCustomTools.Views
         private void EnsureWindowsFormsHost()
         {
             if (_xmlPropertyGrid != null) return;
+            if (!OperatingSystem.IsWindows()) return;
+            
             var host = new WindowsFormsHost();
             _xmlPropertyGrid = new XMLPropertyGrid();
             _xmlPropertyGrid.propertiesChanged += XmlPropertyGrid_propertiesChanged;
