@@ -44,6 +44,7 @@ namespace DANCustomTools.ViewModels
         private List<ActorModel> _originalActors = new();
         private bool _isComponentFilterEnabled;
         private string _componentSearchText = string.Empty;
+        private bool _autoUpdateEnabled = true; // Default to auto-update enabled
 
     // Selection loop prevention / state flags
     private bool _isProcessingRuntimeSelection = false; // true while applying a runtime-originated selection
@@ -74,6 +75,7 @@ namespace DANCustomTools.ViewModels
         public ICommand ShowAllObjectsCommand { get; }
         public ICommand ShowActorsOnlyCommand { get; }
         public ICommand ShowFrisesOnlyCommand { get; }
+        public ICommand ToggleAutoUpdateCommand { get; }
 
         public ObservableCollection<SceneTreeItemViewModel> SceneTreeItems
         {
@@ -113,6 +115,33 @@ namespace DANCustomTools.ViewModels
                 if (SetProperty(ref _componentSearchText, value))
                 {
                     FilterAvailableComponents();
+                }
+            }
+        }
+
+        public bool AutoUpdateEnabled
+        {
+            get => _autoUpdateEnabled;
+            set 
+            {
+                var oldValue = _autoUpdateEnabled;
+                if (SetProperty(ref _autoUpdateEnabled, value))
+                {
+                    LogService.Info($"🔧 AutoUpdateEnabled property changed: {oldValue} → {value}");
+                    
+                    // Sync with service
+                    _sceneService.AutoUpdateEnabled = value;
+                    
+                    // Notify service about auto-update status change
+                    if (value)
+                    {
+                        LogService.Info("🔄 Auto-update enabled - requesting scene tree");
+                        _sceneService.RequestSceneTree();
+                    }
+                    else
+                    {
+                        LogService.Info("⏸️ Auto-update disabled - stopping automatic requests");
+                    }
                 }
             }
         }
@@ -227,6 +256,7 @@ namespace DANCustomTools.ViewModels
             ShowAllObjectsCommand = new RelayCommand(() => SetObjectTypeFilter(ObjectTypeFilter.All));
             ShowActorsOnlyCommand = new RelayCommand(() => SetObjectTypeFilter(ObjectTypeFilter.ActorsOnly));
             ShowFrisesOnlyCommand = new RelayCommand(() => SetObjectTypeFilter(ObjectTypeFilter.FrisesOnly));
+            ToggleAutoUpdateCommand = new RelayCommand(ToggleAutoUpdate);
 
             _sceneService.OnlineSceneTreeUpdated += OnOnlineSceneTreeUpdated;
             _sceneService.OfflineSceneTreesUpdated += OnOfflineSceneTreesUpdated;
@@ -259,6 +289,10 @@ namespace DANCustomTools.ViewModels
                     _propertiesService.StartAsync(arguments)
                 );
                 LogService.Info("All services started successfully");
+
+                // Sync AutoUpdateEnabled with service
+                _sceneService.AutoUpdateEnabled = AutoUpdateEnabled;
+                LogService.Info($"🔧 Synced AutoUpdateEnabled with service: {AutoUpdateEnabled}");
 
                 if (!_sceneService.IsConnected || !_propertiesService.IsConnected)
                 {
@@ -302,6 +336,12 @@ namespace DANCustomTools.ViewModels
 
         private void OnOnlineSceneTreeUpdated(object? sender, SceneTreeModel sceneTree)
         {
+            if (!AutoUpdateEnabled)
+            {
+                LogService.Info("Auto-update disabled - ignoring online scene tree update");
+                return;
+            }
+
             App.Current?.Dispatcher.InvokeAsync(() =>
             {
                 _originalSceneGroups.Clear();
@@ -334,6 +374,12 @@ namespace DANCustomTools.ViewModels
 
         private void OnOfflineSceneTreesUpdated(object? sender, List<SceneTreeModel> sceneTrees)
         {
+            if (!AutoUpdateEnabled)
+            {
+                LogService.Info("Auto-update disabled - ignoring offline scene trees update");
+                return;
+            }
+
             App.Current?.Dispatcher.Invoke(() =>
             {
                 _originalSceneGroups.Clear();
@@ -365,6 +411,12 @@ namespace DANCustomTools.ViewModels
 
         private void OnObjectSelectedFromRuntime(object? sender, uint objectRef)
         {
+            if (!AutoUpdateEnabled)
+            {
+                LogService.Info("Auto-update disabled - ignoring runtime selection update");
+                return;
+            }
+
             LogService.Info($"✨ RUNTIME SELECTION EVENT: Object selected from runtime: {objectRef}");
 
             App.Current?.Dispatcher.Invoke(() =>
@@ -1341,6 +1393,19 @@ namespace DANCustomTools.ViewModels
                 LogService.Error("Failed to refresh scene tree", ex);
             }
             await Task.CompletedTask;
+        }
+
+        private void ToggleAutoUpdate()
+        {
+            var oldValue = AutoUpdateEnabled;
+            LogService.Info($"🔄 ToggleAutoUpdate called - Current value: {oldValue}");
+            
+            // Force toggle the value
+            _autoUpdateEnabled = !_autoUpdateEnabled;
+            OnPropertyChanged(nameof(AutoUpdateEnabled));
+            
+            LogService.Info($"🔄 ToggleAutoUpdate completed: {oldValue} → {AutoUpdateEnabled}");
+            LogService.Info($"Auto-update {(AutoUpdateEnabled ? "enabled" : "disabled")}");
         }
 
         private bool CanExecuteDuplicate() =>

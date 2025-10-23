@@ -15,6 +15,7 @@ namespace DANCustomTools.Services
         event EventHandler<uint>? ObjectSelectedFromRuntime;
 
         bool IsConnected { get; }
+        bool AutoUpdateEnabled { get; set; }
         Task StartAsync(string[] arguments, CancellationToken cancellationToken = default);
         Task StopAsync(CancellationToken cancellationToken = default);
         void ForceConnectionAttempt();

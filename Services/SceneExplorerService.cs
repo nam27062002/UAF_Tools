@@ -21,8 +21,15 @@ namespace DANCustomTools.Services
         private readonly Queue<(uint objectRef, float dx, float dy, float dz)> _duplicateQueue = new();
         private string? _offlineSceneTreePath;
         private DateTime _lastSceneTreeResponse = DateTime.MinValue;
+        private bool _autoUpdateEnabled = true; // Default to auto-update enabled
 
         public override string PluginName => "SceneExplorer_Plugin";
+        
+        public bool AutoUpdateEnabled
+        {
+            get => _autoUpdateEnabled;
+            set => _autoUpdateEnabled = value;
+        }
 
         public event EventHandler<SceneTreeModel>? OnlineSceneTreeUpdated;
         public event EventHandler<List<SceneTreeModel>>? OfflineSceneTreesUpdated;
@@ -71,6 +78,12 @@ namespace DANCustomTools.Services
 
         public void RequestSceneTree()
         {
+            if (!AutoUpdateEnabled)
+            {
+                LogService.Info("⏸️ Auto-update disabled - skipping scene tree request");
+                return;
+            }
+
             if (IsConnected && Plugin != null)
             {
                 LogService.Info("Requesting scene tree from engine");
@@ -78,7 +91,7 @@ namespace DANCustomTools.Services
 
                 Task.Delay(2000).ContinueWith(_ =>
                 {
-                    if (IsConnected && Plugin != null && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 1)
+                    if (IsConnected && Plugin != null && AutoUpdateEnabled && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 1)
                     {
                         LogService.Info("Retrying scene tree request (no response received)");
                         SendSceneTreeRequest();
@@ -331,31 +344,37 @@ namespace DANCustomTools.Services
 
         protected override void OnFirstTimeConnected()
         {
+            if (!AutoUpdateEnabled)
+            {
+                LogService.Info("⏸️ Auto-update disabled - skipping initial scene tree request");
+                return;
+            }
+
             LogService.Info("SceneExplorer first time connected - requesting scene tree");
 
             Task.Run(async () =>
             {
-                if (!IsConnected || Plugin == null) return;
+                if (!IsConnected || Plugin == null || !AutoUpdateEnabled) return;
 
                 LogService.Info("Immediate scene tree request after connection");
                 RequestSceneTree();
 
                 await Task.Delay(500);
-                if (IsConnected && Plugin != null)
+                if (IsConnected && Plugin != null && AutoUpdateEnabled)
                 {
                     LogService.Info("Delayed scene tree request after connection");
                     SendSceneTreeRequest();
                 }
 
                 await Task.Delay(1000);
-                if (IsConnected && Plugin != null && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 2)
+                if (IsConnected && Plugin != null && AutoUpdateEnabled && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 2)
                 {
                     LogService.Info("Aggressive scene tree request (no response)");
                     SendSceneTreeRequest();
                 }
 
                 await Task.Delay(2000);
-                if (IsConnected && Plugin != null && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 3)
+                if (IsConnected && Plugin != null && AutoUpdateEnabled && (DateTime.Now - _lastSceneTreeResponse).TotalSeconds > 3)
                 {
                     LogService.Info("Wake-up approach - sending multiple requests");
                     SendWakeupRequests();
